@@ -1,98 +1,93 @@
-<p align="center">
-  <a href="http://nestjs.com/" target="blank"><img src="https://nestjs.com/img/logo-small.svg" width="120" alt="Nest Logo" /></a>
-</p>
+# Kernoon backend
 
-[circleci-image]: https://img.shields.io/circleci/build/github/nestjs/nest/master?token=abc123def456
-[circleci-url]: https://circleci.com/gh/nestjs/nest
+NestJS monorepo for the Kernoon shop. The React app in `C:\Users\day\Documents\kernoon-front` runs on port **5000**. This API is the only public entry, on port **3000**, and it calls the other services over HTTP.
 
-  <p align="center">A progressive <a href="http://nodejs.org" target="_blank">Node.js</a> framework for building efficient and scalable server-side applications.</p>
-    <p align="center">
-<a href="https://www.npmjs.com/~nestjscore" target="_blank"><img src="https://img.shields.io/npm/v/@nestjs/core.svg" alt="NPM Version" /></a>
-<a href="https://www.npmjs.com/~nestjscore" target="_blank"><img src="https://img.shields.io/npm/l/@nestjs/core.svg" alt="Package License" /></a>
-<a href="https://www.npmjs.com/~nestjscore" target="_blank"><img src="https://img.shields.io/npm/dm/@nestjs/common.svg" alt="NPM Downloads" /></a>
-<a href="https://circleci.com/gh/nestjs/nest" target="_blank"><img src="https://img.shields.io/circleci/build/github/nestjs/nest/master" alt="CircleCI" /></a>
-<a href="https://discord.gg/G7Qnnhy" target="_blank"><img src="https://img.shields.io/badge/discord-online-brightgreen.svg" alt="Discord"/></a>
-<a href="https://opencollective.com/nest#backer" target="_blank"><img src="https://opencollective.com/nest/backers/badge.svg" alt="Backers on Open Collective" /></a>
-<a href="https://opencollective.com/nest#sponsor" target="_blank"><img src="https://opencollective.com/nest/sponsors/badge.svg" alt="Sponsors on Open Collective" /></a>
-  <a href="https://paypal.me/kamilmysliwiec" target="_blank"><img src="https://img.shields.io/badge/Donate-PayPal-ff3f59.svg" alt="Donate us"/></a>
-    <a href="https://opencollective.com/nest#sponsor"  target="_blank"><img src="https://img.shields.io/badge/Support%20us-Open%20Collective-41B883.svg" alt="Support us"></a>
-  <a href="https://twitter.com/nestframework" target="_blank"><img src="https://img.shields.io/twitter/follow/nestframework.svg?style=social&label=Follow" alt="Follow us on Twitter"></a>
-</p>
-  <!--[![Backers on Open Collective](https://opencollective.com/nest/backers/badge.svg)](https://opencollective.com/nest#backer)
-  [![Sponsors on Open Collective](https://opencollective.com/nest/sponsors/badge.svg)](https://opencollective.com/nest#sponsor)-->
+Each app under `apps/` is one deployable process. In Kubernetes or Swarm that process is one pod or task. Shared code lives in `libs/` and is bundled into the app that imports it.
 
-## Description
+| App | Port | What it owns |
+| --- | --- | --- |
+| `api-gateway` | 3000 | Public HTTP, CORS, JWT check, checkout |
+| `identity` | 3001 | Signup, customer login, seller login, profile |
+| `catalog` | 3002 | Clothes, categories, sizes |
+| `cart` | 3003 | Cart lines for a user or a guest cart id |
+| `orders` | 3004 | Placed orders, priced from catalog |
+| `account` | 3005 | Delivery addresses and saved cards |
+| `sellers` | 3006 | Shop applications from `/sell` |
 
-[Nest](https://github.com/nestjs/nest) framework TypeScript starter repository.
+State is in memory so you can run the shop without a database. Keep **one replica** of `identity`, `cart`, `orders`, `account`, and `sellers` until those stores move to Postgres or Redis. A second pod would not see the first pod's data.
 
-## Project setup
+## Run on your machine
 
 ```bash
-$ npm install
+npm install
+npm run start:dev
 ```
 
-## Compile and run the project
+That starts all seven apps. The gateway allows `http://localhost:5000`.
+
+One service at a time:
 
 ```bash
-# development
-$ npm run start
-
-# watch mode
-$ npm run start:dev
-
-# production mode
-$ npm run start:prod
+npm run start:dev:catalog
 ```
 
-## Run tests
+Copy `.env.example` to `.env` when you want to change ports or the JWT secret. The dev secret is `dev-only-change-me`.
+
+Demo accounts, password `Password1`:
+
+- Customer: `hadimojak@gmail.com`
+- Seller: `seller@kernoon.test`
+
+## HTTP API
+
+Public base URL: `http://localhost:3000/api`
+
+- `POST /api/auth/signup` `{ firstName, lastName, email, password }`
+- `POST /api/auth/login` `{ email, password }`
+- `POST /api/auth/seller/login` `{ email, password }`
+- `GET|PATCH /api/profile` and `PATCH /api/profile/password` with `Authorization: Bearer <token>`
+- `GET /api/products?category=newborn&size=0-3`
+- `GET /api/products/:id`, `GET /api/categories`, `GET /api/sizes`
+- `GET|POST /api/cart/items`, `PATCH|DELETE /api/cart/items/:id`, `DELETE /api/cart`
+- `GET /api/orders`, `POST /api/checkout` `{ addressId, paymentMethodId }`
+- `GET|POST /api/addresses`, `DELETE /api/addresses/:id`
+- `GET|POST /api/payment-methods`, `DELETE /api/payment-methods/:id`
+- `POST /api/sellers/applications` `{ shop, name, email, phone, city }`
+
+Guest carts send header `x-cart-id` (8–64 letters, numbers, or dashes). A bearer token attaches the cart to that user. The gateway sets `x-user-id` itself. Do not trust that header from a browser; only the gateway should call the other services.
+
+Cards store brand, holder, expiry, and last four digits. Do not send a full card number.
+
+Password rule, same as the profile page: at least 6 characters, one uppercase letter, and one number.
+
+`GET /health` on every app is the container probe. The gateway report includes each downstream service and stays up when one of them is down (`status: degraded`).
+
+## Containers
 
 ```bash
-# unit tests
-$ npm run test
-
-# e2e tests
-$ npm run test:e2e
-
-# test coverage
-$ npm run test:cov
+npm run docker:up
 ```
 
-## Deployment
+Images are tagged `kernoon/<app>:local`. Only port 3000 is published.
 
-When you're ready to deploy your NestJS application to production, there are some key steps you can take to ensure it runs as efficiently as possible. Check out the [deployment documentation](https://docs.nestjs.com/deployment) for more information.
-
-If you are looking for a cloud-based platform to deploy your NestJS application, check out [Mau](https://mau.nestjs.com), our official platform for deploying NestJS applications on AWS. Mau makes deployment straightforward and fast, requiring just a few simple steps:
+Kubernetes, after those images exist on the cluster (Docker Desktop shares the local images):
 
 ```bash
-$ npm install -g @nestjs/mau
-$ mau deploy
+kubectl apply -k deploy/k8s
 ```
 
-With Mau, you can deploy your application in just a few clicks, allowing you to focus on building features rather than managing infrastructure.
+Swarm, from a manager, after `docker compose build`:
 
-## Resources
+```bash
+docker stack deploy -c deploy/swarm/stack.yml kernoon
+```
 
-Check out a few resources that may come in handy when working with NestJS:
+Replace `JWT_SECRET` in `deploy/k8s/secret.yaml` and the compose files before any shared environment. Move the secret out of git when this leaves your machine.
 
-- Visit the [NestJS Documentation](https://docs.nestjs.com) to learn more about the framework.
-- For questions and support, please visit our [Discord channel](https://discord.gg/G7Qnnhy).
-- To dive deeper and get more hands-on experience, check out our official video [courses](https://courses.nestjs.com/).
-- Deploy your application to AWS with the help of [NestJS Mau](https://mau.nestjs.com) in just a few clicks.
-- Visualize your application graph and interact with the NestJS application in real-time using [NestJS Devtools](https://devtools.nestjs.com).
-- Need help with your project (part-time to full-time)? Check out our official [enterprise support](https://enterprise.nestjs.com).
-- To stay in the loop and get updates, follow us on [X](https://x.com/nestframework) and [LinkedIn](https://linkedin.com/company/nestjs).
-- Looking for a job, or have a job to offer? Check out our official [Jobs board](https://jobs.nestjs.com).
+## Add another service
 
-## Support
+```bash
+nest generate app notifications
+```
 
-Nest is an MIT-licensed open source project. It can grow thanks to the sponsors and support by the amazing backers. If you'd like to join them, please [read more here](https://docs.nestjs.com/support).
-
-## Stay in touch
-
-- Author - [Kamil Myśliwiec](https://twitter.com/kammysliwiec)
-- Website - [https://nestjs.com](https://nestjs.com/)
-- Twitter - [@nestframework](https://twitter.com/nestframework)
-
-## License
-
-Nest is [MIT licensed](https://github.com/nestjs/nest/blob/master/LICENSE).
+Give it a port, a `GET /health` route via `HealthModule.forRoot('notifications')`, a Dockerfile `APP` build, and a Service plus Deployment next to the others. Point the gateway at it with a new `*_URL` variable.

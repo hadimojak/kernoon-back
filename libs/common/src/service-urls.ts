@@ -1,0 +1,30 @@
+export const serviceNames = [
+  'identity',
+  'catalog',
+  'cart',
+  'orders',
+  'account',
+  'sellers',
+] as const;
+
+export type ServiceName = (typeof serviceNames)[number];
+
+const defaults: Record<ServiceName, string> = {
+  identity: 'http://127.0.0.1:3001',
+  catalog: 'http://127.0.0.1:3002',
+  cart: 'http://127.0.0.1:3003',
+  orders: 'http://127.0.0.1:3004',
+  account: 'http://127.0.0.1:3005',
+  sellers: 'http://127.0.0.1:3006',
+};
+
+export function serviceUrls(): Record<ServiceName, string> {
+  return {
+    identity: process.env.IDENTITY_URL ?? defaults.identity,
+    catalog: process.env.CATALOG_URL ?? defaults.catalog,
+    cart: process.env.CART_URL ?? defaults.cart,
+    orders: process.env.ORDERS_URL ?? defaults.orders,
+    account: process.env.ACCOUNT_URL ?? defaults.account,
+    sellers: process.env.SELLERS_URL ?? defaults.sellers,
+  };
+}

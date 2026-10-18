@@ -1,0 +1,229 @@
+x-health: &health
+  test:
+    [
+      "CMD",
+      "node",
+      "-e",
+      "fetch('http://127.0.0.1:' + process.env.PORT + '/health').then((r) => process.exit(r.ok ? 0 : 1)).catch(() => process.exit(1))",
+    ]
+  interval: 10s
+  timeout: 3s
+  retries: 5
+  start_period: 15s
+
+x-data: &data
+  REDIS_URL: redis://:kernoon@redis:6379
+  RABBITMQ_URL: amqp://kernoon:kernoon@rabbitmq:5672
+
+services:
+  postgres:
+    image: postgres:17-alpine
+    environment:
+      POSTGRES_USER: kernoon
+      POSTGRES_PASSWORD: kernoon
+      POSTGRES_DB: kernoon
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - ./docker/postgres/init.sql:/docker-entrypoint-initdb.d/01-databases.sql:ro
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U kernoon -d kernoon"]
+      interval: 10s
+      timeout: 3s
+      retries: 5
+      start_period: 10s
+
+  redis:
+    image: redis:8-alpine
+    command: ["redis-server", "--appendonly", "yes", "--requirepass", "kernoon"]
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_data:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "-a", "kernoon", "ping"]
+      interval: 10s
+      timeout: 3s
+      retries: 5
+      start_period: 5s
+
+  rabbitmq:
+    image: rabbitmq:4-management-alpine
+    environment:
+      RABBITMQ_DEFAULT_USER: kernoon
+      RABBITMQ_DEFAULT_PASS: kernoon
+    ports:
+      - "5672:5672"
+      - "15672:15672"
+    volumes:
+      - rabbitmq_data:/var/lib/rabbitmq
+    healthcheck:
+      test: ["CMD", "rabbitmq-diagnostics", "-q", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 20s
+
+  api-gateway:
+    build:
+      context: .
+      args:
+        APP: api-gateway
+    image: kernoon/api-gateway:local
+    ports:
+      - "3000:3000"
+    environment:
+      <<: *data
+      PORT: "3000"
+      JWT_SECRET: dev-only-change-me
+      CORS_ORIGIN: http://localhost:5000
+      IDENTITY_URL: http://identity:3001
+      CATALOG_URL: http://catalog:3002
+      CART_URL: http://cart:3003
+      ORDERS_URL: http://orders:3004
+      ACCOUNT_URL: http://account:3005
+      SELLERS_URL: http://sellers:3006
+    depends_on:
+      redis:
+        condition: service_healthy
+      rabbitmq:
+        condition: service_healthy
+      identity:
+        condition: service_healthy
+      catalog:
+        condition: service_healthy
+      cart:
+        condition: service_healthy
+      orders:
+        condition: service_healthy
+      account:
+        condition: service_healthy
+      sellers:
+        condition: service_healthy
+
+  identity:
+    build:
+      context: .
+      args:
+        APP: identity
+    image: kernoon/identity:local
+    environment:
+      <<: *data
+      PORT: "3001"
+      JWT_SECRET: dev-only-change-me
+      DATABASE_URL: postgresql://kernoon:kernoon@postgres:5432/identity
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      rabbitmq:
+        condition: service_healthy
+    healthcheck: *health
+
+  catalog:
+    build:
+      context: .
+      args:
+        APP: catalog
+    image: kernoon/catalog:local
+    environment:
+      <<: *data
+      PORT: "3002"
+      DATABASE_URL: postgresql://kernoon:kernoon@postgres:5432/catalog
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      rabbitmq:
+        condition: service_healthy
+    healthcheck: *health
+
+  cart:
+    build:
+      context: .
+      args:
+        APP: cart
+    image: kernoon/cart:local
+    environment:
+      <<: *data
+      PORT: "3003"
+      DATABASE_URL: postgresql://kernoon:kernoon@postgres:5432/cart
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      rabbitmq:
+        condition: service_healthy
+    healthcheck: *health
+
+  orders:
+    build:
+      context: .
+      args:
+        APP: orders
+    image: kernoon/orders:local
+    environment:
+      <<: *data
+      PORT: "3004"
+      DATABASE_URL: postgresql://kernoon:kernoon@postgres:5432/orders
+      CATALOG_URL: http://catalog:3002
+      ACCOUNT_URL: http://account:3005
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      rabbitmq:
+        condition: service_healthy
+      catalog:
+        condition: service_healthy
+      account:
+        condition: service_healthy
+    healthcheck: *health
+
+  account:
+    build:
+      context: .
+      args:
+        APP: account
+    image: kernoon/account:local
+    environment:
+      <<: *data
+      PORT: "3005"
+      DATABASE_URL: postgresql://kernoon:kernoon@postgres:5432/account
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      rabbitmq:
+        condition: service_healthy
+    healthcheck: *health
+
+  sellers:
+    build:
+      context: .
+      args:
+        APP: sellers
+    image: kernoon/sellers:local
+    environment:
+      <<: *data
+      PORT: "3006"
+      DATABASE_URL: postgresql://kernoon:kernoon@postgres:5432/sellers
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      rabbitmq:
+        condition: service_healthy
+    healthcheck: *health
+
+volumes:
+  postgres_data:
+  redis_data:
+  rabbitmq_data:
