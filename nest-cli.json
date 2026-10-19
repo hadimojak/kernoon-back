@@ -6,6 +6,7 @@
   "sourceRoot": "apps/api-gateway/src",
   "compilerOptions": {
     "webpack": true,
+    "webpackConfigPath": "webpack.config.js",
     "tsConfigPath": "apps/api-gateway/tsconfig.app.json"
   },
   "projects": {
