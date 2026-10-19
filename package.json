@@ -12,7 +12,7 @@
     "start": "nest start api-gateway",
     "infra:up": "docker compose --env-file .env.development up -d --wait postgres redis rabbitmq",
     "infra:down": "docker compose --env-file .env.development stop postgres redis rabbitmq",
-    "start:dev": "npm run infra:up && npm run start:dev:all",
+    "start:dev": "npm run start:dev:all",
     "start:dev:all": "concurrently -n gateway,identity,catalog,cart,orders,account,sellers -c cyan,green,yellow,blue,magenta,white,gray \"npm:start:dev:gateway\" \"npm:start:dev:identity\" \"npm:start:dev:catalog\" \"npm:start:dev:cart\" \"npm:start:dev:orders\" \"npm:start:dev:account\" \"npm:start:dev:sellers\"",
     "start:dev:gateway": "nest start api-gateway --watch",
     "start:dev:identity": "nest start identity --watch",

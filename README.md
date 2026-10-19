@@ -20,10 +20,11 @@ State is in memory so you can run the shop without a database. Keep **one replic
 
 ```bash
 npm install
+npm run infra:up
 npm run start:dev
 ```
 
-That starts Postgres, Redis, and RabbitMQ with Docker Compose, then the seven Nest apps on this machine with file watching. The gateway allows `http://localhost:5000`. You need Docker Desktop running. You do not need Swarm for this.
+`infra:up` starts Postgres, Redis, and RabbitMQ with Docker Compose. `start:dev` starts the seven Nest apps on this machine with file watching. The gateway allows `http://localhost:5000`. You need Docker Desktop running for the data services. You do not need Swarm for this.
 
 One service at a time:
 
@@ -66,7 +67,7 @@ Password rule, same as the profile page: at least 6 characters, one uppercase le
 
 Use Compose for infrastructure in development, and Swarm for the whole system in production.
 
-`npm run start:dev` runs `docker compose up` for Postgres (`127.0.0.1:5433`), Redis (`127.0.0.1:6380`), and RabbitMQ (`5672`, management `15672`). Host ports stay off 5432 and 6379 so another local project can keep those. The Nest apps stay on the host so they reload when you save a file. Connection strings in `.env.development` use `127.0.0.1`. Stop the data services with `npm run infra:down`. Data stays in the Compose volumes.
+`npm run infra:up` starts Postgres (`127.0.0.1:5433`), Redis (`127.0.0.1:6380`), and RabbitMQ (`5672`, management `15672`). Host ports stay off 5432 and 6379 so another local project can keep those. `npm run start:dev` runs the Nest apps on the host so they reload when you save a file. Connection strings in `.env.development` use `127.0.0.1`. Stop the data services with `npm run infra:down`. Data stays in the Compose volumes.
 
 Production is Docker Swarm. Replace every `replace-with-...` value in `.env.production` first. The shop origin is `https://www.kernoon.ir` and `https://kernoon.ir`. The public API is `https://api.kernoon.ir`. Inside the stack, apps reach Postgres, Redis, and RabbitMQ by service name.
 
