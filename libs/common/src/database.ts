@@ -10,7 +10,7 @@ export function databaseModule(urlEnvironmentKey: string) {
       driver: pg,
       url: config.getOrThrow<string>(urlEnvironmentKey),
       autoLoadEntities: true,
-      synchronize: config.get<string>('NODE_ENV') !== 'production',
+      synchronize: false,
     }),
   });
 }

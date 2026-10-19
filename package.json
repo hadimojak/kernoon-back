@@ -36,7 +36,8 @@
     "docker:build": "docker compose --env-file .env.development --profile apps build",
     "docker:build:prod": "docker compose --env-file .env.production --profile apps build",
     "docker:swarm:prod": "node scripts/swarm-deploy.mjs .env.production",
-    "docker:swarm:down": "docker stack rm kernoon"
+    "docker:swarm:down": "docker stack rm kernoon",
+    "migration:identity": "typeorm-ts-node-commonjs migration:run -d apps/identity/src/data-source.ts"
   },
   "dependencies": {
     "@nestjs/common": "^11.0.1",
