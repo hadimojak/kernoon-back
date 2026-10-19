@@ -18,6 +18,6 @@ export class UsersController {
 
   @Post('seller/login')
   sellerLogin(@Body() dto: LoginDto) {
-    return this.users.login(dto, 'seller');
+    return this.users.login(dto, ['seller', 'masterSeller']);
   }
 }

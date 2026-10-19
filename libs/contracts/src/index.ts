@@ -16,7 +16,7 @@ export const tiers = ['standard', 'deluxe', 'premium'] as const;
 
 export type Tier = (typeof tiers)[number];
 
-export const roles = ['customer', 'seller'] as const;
+export const roles = ['customer', 'seller', 'masterSeller'] as const;
 
 export type Role = (typeof roles)[number];
 

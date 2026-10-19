@@ -1,8 +1,13 @@
 const path = require('path');
 
 module.exports = function (options) {
+  const externals = options.externals;
   return {
     ...options,
+    externals: [
+      ...(Array.isArray(externals) ? externals : externals ? [externals] : []),
+      { pg: 'commonjs pg' },
+    ],
     resolve: {
       ...options.resolve,
       alias: {

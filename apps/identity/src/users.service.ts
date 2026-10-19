@@ -7,7 +7,9 @@ import {
   UnauthorizedException,
 } from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
+import { InjectRepository } from '@nestjs/typeorm';
 import { randomBytes, scryptSync, timingSafeEqual } from 'crypto';
+import { Repository } from 'typeorm';
 import { PublicUser, Role } from '@app/contracts';
 import {
   ChangePasswordDto,
@@ -15,31 +17,61 @@ import {
   SignupDto,
   UpdateProfileDto,
 } from './dto';
-
-type StoredUser = PublicUser & { passwordHash: string };
+import { Customer } from './models/customer';
+import { MasterSeller } from './models/master-seller';
+import { Seller } from './models/seller';
+import { IdentityUser } from './models';
 
 const PASSWORD_RULE =
   'Password must be at least 6 characters and include an uppercase letter and a number';
 
 @Injectable()
 export class UsersService implements OnModuleInit {
-  private readonly users = new Map<string, StoredUser>();
+  constructor(
+    private readonly jwt: JwtService,
+    @InjectRepository(Customer)
+    private readonly customers: Repository<Customer>,
+    @InjectRepository(Seller)
+    private readonly sellers: Repository<Seller>,
+    @InjectRepository(MasterSeller)
+    private readonly masterSellers: Repository<MasterSeller>,
+  ) {}
 
-  constructor(private readonly jwt: JwtService) {}
-
-  onModuleInit() {
-    this.seed('hadi', 'arbabi', 'hadimojak@gmail.com', 'Password1', 'customer');
-    this.seed('Kernoon', 'Shop', 'seller@kernoon.test', 'Password1', 'seller');
+  async onModuleInit() {
+    await this.seed(
+      'hadi',
+      'arbabi',
+      'hadimojak@gmail.com',
+      'Password1',
+      'customer',
+    );
+    const owner = await this.seed(
+      'Kernoon',
+      'Owner',
+      'owner@kernoon.test',
+      'Password1',
+      'masterSeller',
+      'Kernoon',
+    );
+    await this.seed(
+      'Kernoon',
+      'Shop',
+      'seller@kernoon.test',
+      'Password1',
+      'seller',
+      undefined,
+      owner.id,
+    );
   }
 
-  signup(dto: SignupDto) {
+  async signup(dto: SignupDto) {
     this.assertPassword(dto.password);
     const email = dto.email.trim().toLowerCase();
-    if (this.findByEmail(email)) {
+    if (await this.findByEmail(email)) {
       throw new ConflictException('An account with this email already exists');
     }
 
-    const user = this.createUser({
+    const user = await this.createUser({
       firstName: dto.firstName.trim(),
       lastName: dto.lastName.trim(),
       email,
@@ -49,11 +81,13 @@ export class UsersService implements OnModuleInit {
     return this.tokenResponse(user);
   }
 
-  login(dto: LoginDto, role: Role) {
-    const user = this.findByEmail(dto.email.trim().toLowerCase());
+  async login(dto: LoginDto, allowed: Role | Role[]) {
+    const roles = Array.isArray(allowed) ? allowed : [allowed];
+    const user = await this.findByEmail(dto.email.trim().toLowerCase());
     if (
       !user ||
-      user.role !== role ||
+      !roles.includes(user.role) ||
+      !user.passwordHash ||
       !verifyPassword(dto.password, user.passwordHash)
     ) {
       throw new UnauthorizedException('Invalid email or password');
@@ -61,15 +95,15 @@ export class UsersService implements OnModuleInit {
     return this.tokenResponse(user);
   }
 
-  getProfile(userId: string) {
-    return this.publicUser(this.requireUser(userId));
+  async getProfile(userId: string) {
+    return this.publicUser(await this.requireUser(userId));
   }
 
-  updateProfile(userId: string, dto: UpdateProfileDto) {
-    const user = this.requireUser(userId);
+  async updateProfile(userId: string, dto: UpdateProfileDto) {
+    const user = await this.requireUser(userId);
     if (dto.email) {
       const email = dto.email.trim().toLowerCase();
-      const existing = this.findByEmail(email);
+      const existing = await this.findByEmail(email);
       if (existing && existing.id !== user.id) {
         throw new ConflictException(
           'An account with this email already exists',
@@ -81,62 +115,109 @@ export class UsersService implements OnModuleInit {
     if (dto.lastName) user.lastName = dto.lastName.trim();
     if (dto.phone !== undefined) user.phone = dto.phone.trim();
     if (dto.gender !== undefined) user.gender = dto.gender;
-    return this.publicUser(user);
+    return this.publicUser(await this.saveUser(user));
   }
 
-  changePassword(userId: string, dto: ChangePasswordDto) {
-    const user = this.requireUser(userId);
-    if (!verifyPassword(dto.currentPassword, user.passwordHash)) {
+  async changePassword(userId: string, dto: ChangePasswordDto) {
+    const user = await this.requireUser(userId);
+    if (
+      !user.passwordHash ||
+      !verifyPassword(dto.currentPassword, user.passwordHash)
+    ) {
       throw new UnauthorizedException('Current password is incorrect');
     }
     this.assertPassword(dto.newPassword);
     user.passwordHash = hashPassword(dto.newPassword);
+    await this.saveUser(user);
     return { updated: true };
   }
 
-  private seed(
+  private async seed(
     firstName: string,
     lastName: string,
     email: string,
     password: string,
     role: Role,
+    businessName?: string,
+    masterSellerId?: string,
   ) {
-    this.createUser({ firstName, lastName, email, password, role });
+    const existing = await this.findByEmail(email);
+    if (existing) return existing;
+    return this.createUser({
+      firstName,
+      lastName,
+      email,
+      password,
+      role,
+      businessName,
+      masterSellerId,
+    });
   }
 
-  private createUser(input: {
+  private async createUser(input: {
     firstName: string;
     lastName: string;
     email: string;
     password: string;
     role: Role;
+    businessName?: string;
+    masterSellerId?: string;
   }) {
-    const user: StoredUser = {
-      id: randomBytes(8).toString('hex'),
+    const shared = {
       firstName: input.firstName,
       lastName: input.lastName,
       email: input.email,
       phone: '',
       gender: '',
-      role: input.role,
-      createdAt: new Date().toISOString(),
       passwordHash: hashPassword(input.password),
+      googleSubject: null,
+      emailVerified: true,
+      phoneVerified: false,
     };
-    this.users.set(user.id, user);
-    return user;
+
+    if (input.role === 'customer') {
+      return this.customers.save(this.customers.create(shared));
+    }
+    if (input.role === 'seller') {
+      return this.sellers.save(
+        this.sellers.create({
+          ...shared,
+          masterSellerId: input.masterSellerId ?? '',
+        }),
+      );
+    }
+    return this.masterSellers.save(
+      this.masterSellers.create({
+        ...shared,
+        businessName: input.businessName ?? '',
+      }),
+    );
   }
 
-  private requireUser(userId: string) {
-    const user = this.users.get(userId);
+  private async requireUser(userId: string) {
+    const user =
+      (await this.customers.findOne({ where: { id: userId } })) ??
+      (await this.sellers.findOne({ where: { id: userId } })) ??
+      (await this.masterSellers.findOne({ where: { id: userId } }));
     if (!user) throw new NotFoundException('User not found');
     return user;
   }
 
-  private findByEmail(email: string) {
-    return [...this.users.values()].find((user) => user.email === email);
+  private async findByEmail(email: string) {
+    return (
+      (await this.customers.findOne({ where: { email } })) ??
+      (await this.sellers.findOne({ where: { email } })) ??
+      (await this.masterSellers.findOne({ where: { email } }))
+    );
   }
 
-  private tokenResponse(user: StoredUser) {
+  private saveUser(user: IdentityUser) {
+    if (user.role === 'customer') return this.customers.save(user);
+    if (user.role === 'seller') return this.sellers.save(user);
+    return this.masterSellers.save(user);
+  }
+
+  private tokenResponse(user: IdentityUser) {
     const accessToken = this.jwt.sign({
       sub: user.id,
       email: user.email,
@@ -145,16 +226,19 @@ export class UsersService implements OnModuleInit {
     return { accessToken, user: this.publicUser(user) };
   }
 
-  private publicUser(user: StoredUser): PublicUser {
+  private publicUser(user: IdentityUser): PublicUser {
     return {
       id: user.id,
       firstName: user.firstName,
       lastName: user.lastName,
-      email: user.email,
-      phone: user.phone,
+      email: user.email ?? '',
+      phone: user.phone ?? '',
       gender: user.gender,
       role: user.role,
-      createdAt: user.createdAt,
+      createdAt: (user.createdAt instanceof Date
+        ? user.createdAt
+        : new Date()
+      ).toISOString(),
     };
   }
 
