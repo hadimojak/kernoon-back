@@ -2,7 +2,7 @@
 
 NestJS monorepo for the Kernoon shop. The React app in `C:\Users\day\Documents\kernoon-front` runs on port **5000**. This API is the only public entry, on port **3000**, and it calls the other services over HTTP.
 
-Each app under `apps/` is one deployable process. In Kubernetes or Swarm that process is one pod or task. Shared code lives in `libs/` and is bundled into the app that imports it.
+Each app under `apps/` is one process and one Swarm service. Shared code lives in `libs/` and is bundled into the image that imports it.
 
 | App | Port | What it owns |
 | --- | --- | --- |
@@ -23,7 +23,7 @@ npm install
 npm run start:dev
 ```
 
-That starts all seven apps. The gateway allows `http://localhost:5000`.
+That starts Postgres, Redis, and RabbitMQ with Docker Compose, then the seven Nest apps on this machine with file watching. The gateway allows `http://localhost:5000`. You need Docker Desktop running. You do not need Swarm for this.
 
 One service at a time:
 
@@ -31,7 +31,7 @@ One service at a time:
 npm run start:dev:catalog
 ```
 
-Copy `.env.example` to `.env` when you want to change ports or the JWT secret. The dev secret is `dev-only-change-me`.
+Local settings are in `.env.development`. Production settings for `www.kernoon.ir` are in `.env.production`.
 
 Demo accounts, password `Password1`:
 
@@ -64,25 +64,19 @@ Password rule, same as the profile page: at least 6 characters, one uppercase le
 
 ## Containers
 
-```bash
-npm run docker:up
-```
+Use Compose for infrastructure in development, and Swarm for the whole system in production.
 
-Images are tagged `kernoon/<app>:local`. Only port 3000 is published.
+`npm run start:dev` runs `docker compose up` for Postgres (`127.0.0.1:5433`), Redis (`127.0.0.1:6380`), and RabbitMQ (`5672`, management `15672`). Host ports stay off 5432 and 6379 so another local project can keep those. The Nest apps stay on the host so they reload when you save a file. Connection strings in `.env.development` use `127.0.0.1`. Stop the data services with `npm run infra:down`. Data stays in the Compose volumes.
 
-Kubernetes, after those images exist on the cluster (Docker Desktop shares the local images):
+Production is Docker Swarm. Replace every `replace-with-...` value in `.env.production` first. The shop origin is `https://www.kernoon.ir` and `https://kernoon.ir`. The public API is `https://api.kernoon.ir`. Inside the stack, apps reach Postgres, Redis, and RabbitMQ by service name.
 
 ```bash
-kubectl apply -k deploy/k8s
+docker swarm init
+npm run docker:build:prod
+npm run docker:swarm:prod
 ```
 
-Swarm, from a manager, after `docker compose build`:
-
-```bash
-docker stack deploy -c deploy/swarm/stack.yml kernoon
-```
-
-Replace `JWT_SECRET` in `deploy/k8s/secret.yaml` and the compose files before any shared environment. Move the secret out of git when this leaves your machine.
+`docker swarm init` is once per machine. `npm run docker:swarm:down` removes the stack.
 
 ## Add another service
 
@@ -90,4 +84,4 @@ Replace `JWT_SECRET` in `deploy/k8s/secret.yaml` and the compose files before an
 nest generate app notifications
 ```
 
-Give it a port, a `GET /health` route via `HealthModule.forRoot('notifications')`, a Dockerfile `APP` build, and a Service plus Deployment next to the others. Point the gateway at it with a new `*_URL` variable.
+Give it a port, a `GET /health` route via `HealthModule.forRoot('notifications')`, a build service under the `apps` profile in `docker-compose.yml`, and a service in `deploy/swarm/stack.yml`. Point the gateway at it with a new `*_URL` variable.

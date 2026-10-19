@@ -1,3 +1,4 @@
+export { AppConfigModule } from './config';
 export { bootstrap } from './bootstrap';
 export { HealthModule } from './health.module';
 export { ServiceClient, ServiceResult } from './service-client';

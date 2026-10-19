@@ -12,23 +12,34 @@ x-health: &health
   start_period: 15s
 
 x-data: &data
-  REDIS_URL: redis://:kernoon@redis:6379
-  RABBITMQ_URL: amqp://kernoon:kernoon@rabbitmq:5672
+  NODE_ENV: ${NODE_ENV}
+  JWT_SECRET: ${JWT_SECRET}
+  CORS_ORIGIN: ${CORS_ORIGIN}
+  PUBLIC_APP_URL: ${PUBLIC_APP_URL}
+  PUBLIC_API_URL: ${PUBLIC_API_URL}
+  REDIS_URL: redis://:${REDIS_PASSWORD}@redis:6379
+  RABBITMQ_URL: amqp://${RABBITMQ_USER}:${RABBITMQ_PASSWORD}@rabbitmq:5672
+  IDENTITY_URL: ${IDENTITY_URL}
+  CATALOG_URL: ${CATALOG_URL}
+  CART_URL: ${CART_URL}
+  ORDERS_URL: ${ORDERS_URL}
+  ACCOUNT_URL: ${ACCOUNT_URL}
+  SELLERS_URL: ${SELLERS_URL}
 
 services:
   postgres:
     image: postgres:17-alpine
     environment:
-      POSTGRES_USER: kernoon
-      POSTGRES_PASSWORD: kernoon
-      POSTGRES_DB: kernoon
+      POSTGRES_USER: ${POSTGRES_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+      POSTGRES_DB: ${POSTGRES_DB}
     ports:
-      - "5432:5432"
+      - "5433:5432"
     volumes:
       - postgres_data:/var/lib/postgresql/data
       - ./docker/postgres/init.sql:/docker-entrypoint-initdb.d/01-databases.sql:ro
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U kernoon -d kernoon"]
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER} -d ${POSTGRES_DB}"]
       interval: 10s
       timeout: 3s
       retries: 5
@@ -36,13 +47,13 @@ services:
 
   redis:
     image: redis:8-alpine
-    command: ["redis-server", "--appendonly", "yes", "--requirepass", "kernoon"]
+    command: ["redis-server", "--appendonly", "yes", "--requirepass", "${REDIS_PASSWORD}"]
     ports:
-      - "6379:6379"
+      - "6380:6379"
     volumes:
       - redis_data:/data
     healthcheck:
-      test: ["CMD", "redis-cli", "-a", "kernoon", "ping"]
+      test: ["CMD", "redis-cli", "-a", "${REDIS_PASSWORD}", "ping"]
       interval: 10s
       timeout: 3s
       retries: 5
@@ -51,8 +62,8 @@ services:
   rabbitmq:
     image: rabbitmq:4-management-alpine
     environment:
-      RABBITMQ_DEFAULT_USER: kernoon
-      RABBITMQ_DEFAULT_PASS: kernoon
+      RABBITMQ_DEFAULT_USER: ${RABBITMQ_USER}
+      RABBITMQ_DEFAULT_PASS: ${RABBITMQ_PASSWORD}
     ports:
       - "5672:5672"
       - "15672:15672"
@@ -66,24 +77,17 @@ services:
       start_period: 20s
 
   api-gateway:
+    profiles: ["apps"]
     build:
       context: .
       args:
         APP: api-gateway
-    image: kernoon/api-gateway:local
+    image: kernoon/api-gateway:${IMAGE_TAG}
     ports:
       - "3000:3000"
     environment:
       <<: *data
       PORT: "3000"
-      JWT_SECRET: dev-only-change-me
-      CORS_ORIGIN: http://localhost:5000
-      IDENTITY_URL: http://identity:3001
-      CATALOG_URL: http://catalog:3002
-      CART_URL: http://cart:3003
-      ORDERS_URL: http://orders:3004
-      ACCOUNT_URL: http://account:3005
-      SELLERS_URL: http://sellers:3006
     depends_on:
       redis:
         condition: service_healthy
@@ -103,16 +107,16 @@ services:
         condition: service_healthy
 
   identity:
+    profiles: ["apps"]
     build:
       context: .
       args:
         APP: identity
-    image: kernoon/identity:local
+    image: kernoon/identity:${IMAGE_TAG}
     environment:
       <<: *data
       PORT: "3001"
-      JWT_SECRET: dev-only-change-me
-      DATABASE_URL: postgresql://kernoon:kernoon@postgres:5432/identity
+      DATABASE_URL: postgresql://${POSTGRES_USER}:${POSTGRES_PASSWORD}@postgres:5432/identity
     depends_on:
       postgres:
         condition: service_healthy
@@ -123,15 +127,16 @@ services:
     healthcheck: *health
 
   catalog:
+    profiles: ["apps"]
     build:
       context: .
       args:
         APP: catalog
-    image: kernoon/catalog:local
+    image: kernoon/catalog:${IMAGE_TAG}
     environment:
       <<: *data
       PORT: "3002"
-      DATABASE_URL: postgresql://kernoon:kernoon@postgres:5432/catalog
+      DATABASE_URL: postgresql://${POSTGRES_USER}:${POSTGRES_PASSWORD}@postgres:5432/catalog
     depends_on:
       postgres:
         condition: service_healthy
@@ -142,15 +147,16 @@ services:
     healthcheck: *health
 
   cart:
+    profiles: ["apps"]
     build:
       context: .
       args:
         APP: cart
-    image: kernoon/cart:local
+    image: kernoon/cart:${IMAGE_TAG}
     environment:
       <<: *data
       PORT: "3003"
-      DATABASE_URL: postgresql://kernoon:kernoon@postgres:5432/cart
+      DATABASE_URL: postgresql://${POSTGRES_USER}:${POSTGRES_PASSWORD}@postgres:5432/cart
     depends_on:
       postgres:
         condition: service_healthy
@@ -161,17 +167,16 @@ services:
     healthcheck: *health
 
   orders:
+    profiles: ["apps"]
     build:
       context: .
       args:
         APP: orders
-    image: kernoon/orders:local
+    image: kernoon/orders:${IMAGE_TAG}
     environment:
       <<: *data
       PORT: "3004"
-      DATABASE_URL: postgresql://kernoon:kernoon@postgres:5432/orders
-      CATALOG_URL: http://catalog:3002
-      ACCOUNT_URL: http://account:3005
+      DATABASE_URL: postgresql://${POSTGRES_USER}:${POSTGRES_PASSWORD}@postgres:5432/orders
     depends_on:
       postgres:
         condition: service_healthy
@@ -186,15 +191,16 @@ services:
     healthcheck: *health
 
   account:
+    profiles: ["apps"]
     build:
       context: .
       args:
         APP: account
-    image: kernoon/account:local
+    image: kernoon/account:${IMAGE_TAG}
     environment:
       <<: *data
       PORT: "3005"
-      DATABASE_URL: postgresql://kernoon:kernoon@postgres:5432/account
+      DATABASE_URL: postgresql://${POSTGRES_USER}:${POSTGRES_PASSWORD}@postgres:5432/account
     depends_on:
       postgres:
         condition: service_healthy
@@ -205,15 +211,16 @@ services:
     healthcheck: *health
 
   sellers:
+    profiles: ["apps"]
     build:
       context: .
       args:
         APP: sellers
-    image: kernoon/sellers:local
+    image: kernoon/sellers:${IMAGE_TAG}
     environment:
       <<: *data
       PORT: "3006"
-      DATABASE_URL: postgresql://kernoon:kernoon@postgres:5432/sellers
+      DATABASE_URL: postgresql://${POSTGRES_USER}:${POSTGRES_PASSWORD}@postgres:5432/sellers
     depends_on:
       postgres:
         condition: service_healthy

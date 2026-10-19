@@ -1,14 +1,14 @@
 import { Module } from '@nestjs/common';
 import { ConfigModule, ConfigService } from '@nestjs/config';
 import { JwtModule } from '@nestjs/jwt';
-import { HealthModule } from '@app/common';
+import { AppConfigModule, HealthModule } from '@app/common';
 import { ProfileController } from './profile.controller';
 import { UsersController } from './users.controller';
 import { UsersService } from './users.service';
 
 @Module({
   imports: [
-    ConfigModule.forRoot({ isGlobal: true }),
+    AppConfigModule,
     JwtModule.registerAsync({
       imports: [ConfigModule],
       inject: [ConfigService],
