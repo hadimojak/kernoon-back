@@ -31,14 +31,14 @@ export class SignupDto {
 }
 
 export class LoginDto {
-  @ValidateIf((dto: LoginDto) => !dto.username?.trim())
+  @ValidateIf((dto: LoginDto) => !dto.phone?.trim())
   @IsEmail()
   email?: string;
 
   @ValidateIf((dto: LoginDto) => !dto.email?.trim())
   @IsString()
-  @MinLength(1)
-  username?: string;
+  @MinLength(10)
+  phone?: string;
 
   @IsString()
   password!: string;

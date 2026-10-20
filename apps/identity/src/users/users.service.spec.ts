@@ -80,7 +80,7 @@ describe('UsersService', () => {
 
   it('logs in the seeded customer', async () => {
     const result = await users.login(
-      { email: 'hadimojak@gmail.com', password: 'Password1' },
+      { email: 'hadimojak@gmail.com', password: '123456' },
       'customer',
     );
     expect(result.accessToken).toBe('access');
@@ -91,7 +91,7 @@ describe('UsersService', () => {
 
   it('rotates the refresh token', async () => {
     const login = await users.login(
-      { email: 'hadimojak@gmail.com', password: 'Password1' },
+      { email: 'hadimojak@gmail.com', password: '123456' },
       'customer',
     );
     const refreshed = await users.refresh(login.refreshToken);
@@ -105,7 +105,7 @@ describe('UsersService', () => {
   it('rejects a customer password on the seller login', async () => {
     await expect(
       users.login(
-        { email: 'hadimojak@gmail.com', password: 'Password1' },
+        { email: 'hadimojak@gmail.com', password: '123456' },
         'seller',
       ),
     ).rejects.toThrow(UnauthorizedException);

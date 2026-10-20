@@ -49,14 +49,14 @@ export class UsersService implements OnModuleInit {
       'hadi',
       'arbabi',
       'hadimojak@gmail.com',
-      'Password1',
+      '123456',
       'customer',
     );
     const owner = await this.seed(
       'Kernoon',
       'Owner',
       'owner@kernoon.test',
-      'Password1',
+      '123456',
       'masterSeller',
       'Kernoon',
     );
@@ -64,7 +64,7 @@ export class UsersService implements OnModuleInit {
       'Kernoon',
       'Shop',
       'seller@kernoon.test',
-      'Password1',
+      '123456',
       'seller',
       undefined,
       owner.id,
@@ -96,7 +96,7 @@ export class UsersService implements OnModuleInit {
 
   async login(dto: LoginDto, allowed: Role | Role[]) {
     const roles = Array.isArray(allowed) ? allowed : [allowed];
-    const identifier = (dto.username ?? dto.email ?? '').trim();
+    const identifier = (dto.email ?? dto.phone ?? '').trim();
     const user = await this.findForPassword(identifier);
     if (
       !user ||
@@ -104,7 +104,7 @@ export class UsersService implements OnModuleInit {
       !user.passwordHash ||
       !verifyPassword(dto.password, user.passwordHash)
     ) {
-      throw new UnauthorizedException('Invalid username or password');
+      throw new UnauthorizedException('Invalid email, phone, or password');
     }
     return this.tokenResponse(user);
   }
