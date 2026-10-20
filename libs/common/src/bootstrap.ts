@@ -1,5 +1,4 @@
 import {
-  Logger,
   RequestMethod,
   Type,
   ValidationPipe,
@@ -18,7 +17,9 @@ export async function bootstrap(
     prefix?: string;
   },
 ) {
-  const app = await NestFactory.create(module);
+  const app = await NestFactory.create(module, {
+    logger: ['error', 'warn'],
+  });
   app.enableShutdownHooks();
   app.enableVersioning({
     type: VersioningType.URI,
@@ -47,6 +48,6 @@ export async function bootstrap(
   }
 
   const port = Number(process.env.PORT ?? options.defaultPort);
-  await app.listen(port);
-  Logger.log(`${options.name} listening on ${port}`, 'Bootstrap');
+  await app.listen(port, '0.0.0.0');
+  console.log(await app.getUrl());
 }
