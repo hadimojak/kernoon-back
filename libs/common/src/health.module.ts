@@ -1,8 +1,15 @@
-import { Controller, DynamicModule, Get, Inject, Module } from '@nestjs/common';
+import {
+  Controller,
+  DynamicModule,
+  Get,
+  Inject,
+  Module,
+  VERSION_NEUTRAL,
+} from '@nestjs/common';
 
 export const SERVICE_NAME = 'SERVICE_NAME';
 
-@Controller('health')
+@Controller({ path: 'health', version: VERSION_NEUTRAL })
 export class HealthController {
   constructor(@Inject(SERVICE_NAME) private readonly serviceName: string) {}
 

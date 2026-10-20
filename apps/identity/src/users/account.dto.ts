@@ -3,9 +3,12 @@ import {
   IsIn,
   IsOptional,
   IsString,
+  Matches,
   MinLength,
   ValidateIf,
 } from 'class-validator';
+
+const USERNAME = /^[a-zA-Z0-9._]{3,32}$/;
 
 export class SignupDto {
   @IsString()
@@ -15,6 +18,9 @@ export class SignupDto {
   @IsString()
   @MinLength(1)
   lastName!: string;
+
+  @Matches(USERNAME)
+  username!: string;
 
   @IsString()
   @MinLength(10)
@@ -31,11 +37,15 @@ export class SignupDto {
 }
 
 export class LoginDto {
-  @ValidateIf((dto: LoginDto) => !dto.phone?.trim())
+  @ValidateIf((dto: LoginDto) => !dto.email?.trim() && !dto.phone?.trim())
+  @Matches(USERNAME)
+  username?: string;
+
+  @ValidateIf((dto: LoginDto) => !dto.username?.trim() && !dto.phone?.trim())
   @IsEmail()
   email?: string;
 
-  @ValidateIf((dto: LoginDto) => !dto.email?.trim())
+  @ValidateIf((dto: LoginDto) => !dto.username?.trim() && !dto.email?.trim())
   @IsString()
   @MinLength(10)
   phone?: string;
@@ -59,6 +69,10 @@ export class UpdateProfileDto {
   @IsString()
   @MinLength(1)
   lastName?: string;
+
+  @IsOptional()
+  @Matches(USERNAME)
+  username?: string;
 
   @IsOptional()
   @IsEmail()

@@ -1,6 +1,6 @@
 export { AppConfigModule } from './config';
 export { databaseModule } from './database';
-export { bootstrap } from './bootstrap';
+export { API_VERSION, bootstrap } from './bootstrap';
 export { HealthModule } from './health.module';
 export { ServiceClient, ServiceResult } from './service-client';
 export { serviceNames, serviceUrls, ServiceName } from './service-urls';

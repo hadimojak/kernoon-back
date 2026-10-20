@@ -116,6 +116,7 @@ describe('UsersService', () => {
       users.signup({
         firstName: 'Ada',
         lastName: 'Lovelace',
+        username: 'ada',
         phone: '09120000001',
         email: 'ada@kernoon.test',
         password: 'short',
@@ -137,6 +138,7 @@ describe('UsersService', () => {
       users.signup({
         firstName: 'Hadi',
         lastName: 'Arbabi',
+        username: 'hadi.other',
         phone: '09120000002',
         email: 'hadimojak@gmail.com',
         password: 'Password1',

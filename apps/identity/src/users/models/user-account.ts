@@ -11,6 +11,9 @@ export abstract class UserAccount {
   lastName!: string;
 
   @Column({ type: 'varchar', nullable: true, unique: true })
+  username!: string | null;
+
+  @Column({ type: 'varchar', nullable: true, unique: true })
   email!: string | null;
 
   @Column({ type: 'varchar', nullable: true, unique: true })

@@ -203,6 +203,8 @@ export type PublicUser = {
   id: string;
   firstName: string;
   lastName: string;
+
+  username: string;
   email: string;
   phone: string;
   gender: string;

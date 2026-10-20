@@ -1,4 +1,5 @@
 import { Injectable, ServiceUnavailableException } from '@nestjs/common';
+import { API_VERSION } from './bootstrap';
 
 export type ServiceResult<T = unknown> = {
   status: number;
@@ -16,7 +17,7 @@ export class ServiceClient {
     query?: Record<string, string | undefined>;
     headers?: Record<string, string | undefined>;
   }): Promise<ServiceResult<T>> {
-    const url = new URL(input.path, withSlash(input.baseUrl));
+    const url = new URL(versionedPath(input.path), withSlash(input.baseUrl));
     for (const [key, value] of Object.entries(input.query ?? {})) {
       if (value) url.searchParams.set(key, value);
     }
@@ -42,6 +43,18 @@ export class ServiceClient {
       throw new ServiceUnavailableException(`${input.service} is unavailable`);
     }
   }
+}
+
+function versionedPath(path: string) {
+  const normalized = path.startsWith('/') ? path : `/${path}`;
+  if (normalized === '/health' || normalized.startsWith('/health/')) {
+    return normalized;
+  }
+  const prefix = `/v${API_VERSION}`;
+  if (normalized === prefix || normalized.startsWith(`${prefix}/`)) {
+    return normalized;
+  }
+  return `${prefix}${normalized}`;
 }
 
 function withSlash(baseUrl: string) {

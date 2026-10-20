@@ -47,12 +47,14 @@ export class UsersService implements OnModuleInit {
   async onModuleInit() {
     await this.seed(
       'hadi',
+      'hadi',
       'arbabi',
       'hadimojak@gmail.com',
       '123456',
       'customer',
     );
     const owner = await this.seed(
+      'owner',
       'Kernoon',
       'Owner',
       'owner@kernoon.test',
@@ -61,6 +63,7 @@ export class UsersService implements OnModuleInit {
       'Kernoon',
     );
     await this.seed(
+      'seller',
       'Kernoon',
       'Shop',
       'seller@kernoon.test',
@@ -82,10 +85,17 @@ export class UsersService implements OnModuleInit {
     if (email && (await this.findByEmail(email))) {
       throw new ConflictException('An account with this email already exists');
     }
+    const username = this.accountName(dto.username);
+    if (await this.findByUsername(username)) {
+      throw new ConflictException(
+        'An account with this username already exists',
+      );
+    }
 
     const user = await this.createUser({
       firstName: dto.firstName.trim(),
       lastName: dto.lastName.trim(),
+      username,
       email,
       phone,
       role: 'customer',
@@ -96,7 +106,7 @@ export class UsersService implements OnModuleInit {
 
   async login(dto: LoginDto, allowed: Role | Role[]) {
     const roles = Array.isArray(allowed) ? allowed : [allowed];
-    const identifier = (dto.email ?? dto.phone ?? '').trim();
+    const identifier = (dto.username ?? dto.email ?? dto.phone ?? '').trim();
     const user = await this.findForPassword(identifier);
     if (
       !user ||
@@ -104,7 +114,7 @@ export class UsersService implements OnModuleInit {
       !user.passwordHash ||
       !verifyPassword(dto.password, user.passwordHash)
     ) {
-      throw new UnauthorizedException('Invalid email, phone, or password');
+      throw new UnauthorizedException('Invalid username or password');
     }
     return this.tokenResponse(user);
   }
@@ -136,6 +146,16 @@ export class UsersService implements OnModuleInit {
     }
     if (dto.firstName) user.firstName = dto.firstName.trim();
     if (dto.lastName) user.lastName = dto.lastName.trim();
+    if (dto.username) {
+      const username = this.accountName(dto.username);
+      const taken = await this.findByUsername(username);
+      if (taken && taken.id !== user.id) {
+        throw new ConflictException(
+          'An account with this username already exists',
+        );
+      }
+      user.username = username;
+    }
     if (dto.phone !== undefined) {
       const phone = dto.phone.trim() ? this.phoneNumber(dto.phone) : null;
       if (phone) {
@@ -167,6 +187,7 @@ export class UsersService implements OnModuleInit {
   }
 
   private async seed(
+    username: string,
     firstName: string,
     lastName: string,
     email: string,
@@ -176,8 +197,15 @@ export class UsersService implements OnModuleInit {
     masterSellerId?: string,
   ) {
     const existing = await this.findByEmail(email);
-    if (existing) return existing;
+    if (existing) {
+      if (!existing.username) {
+        existing.username = username;
+        return this.saveUser(existing);
+      }
+      return existing;
+    }
     return this.createUser({
+      username,
       firstName,
       lastName,
       email,
@@ -191,6 +219,7 @@ export class UsersService implements OnModuleInit {
   private async createUser(input: {
     firstName: string;
     lastName: string;
+    username: string | null;
     email: string | null;
     phone?: string | null;
     password: string;
@@ -201,6 +230,7 @@ export class UsersService implements OnModuleInit {
     const shared = {
       firstName: input.firstName,
       lastName: input.lastName,
+      username: input.username,
       email: input.email,
       phone: input.phone ?? null,
       gender: '',
@@ -241,6 +271,7 @@ export class UsersService implements OnModuleInit {
       this.customers.create({
         firstName: '',
         lastName: '',
+        username: null,
         email: null,
         phone,
         gender: '',
@@ -281,6 +312,18 @@ export class UsersService implements OnModuleInit {
     );
   }
 
+  private accountName(input: string) {
+    return input.trim().toLowerCase();
+  }
+
+  private async findByUsername(username: string) {
+    return (
+      (await this.customers.findOne({ where: { username } })) ??
+      (await this.sellers.findOne({ where: { username } })) ??
+      (await this.masterSellers.findOne({ where: { username } }))
+    );
+  }
+
   private async findForPassword(identifier: string) {
     if (!identifier) return null;
     if (identifier.includes('@')) {
@@ -291,7 +334,7 @@ export class UsersService implements OnModuleInit {
       const byPhone = await this.findByPhone(phone);
       if (byPhone) return byPhone;
     }
-    return this.findByEmail(identifier.toLowerCase());
+    return this.findByUsername(identifier.toLowerCase());
   }
 
   private async findByEmail(email: string) {
@@ -368,6 +411,7 @@ export class UsersService implements OnModuleInit {
       id: user.id,
       firstName: user.firstName,
       lastName: user.lastName,
+      username: user.username ?? '',
       email: user.email ?? '',
       phone: user.phone ?? '',
       gender: user.gender,

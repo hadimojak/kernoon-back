@@ -1,8 +1,9 @@
-import { INestApplication } from '@nestjs/common';
+import { INestApplication, VersioningType } from '@nestjs/common';
 import { Test } from '@nestjs/testing';
 import { Repository } from 'typeorm';
 import request from 'supertest';
 import { App } from 'supertest/types';
+import { API_VERSION } from '@app/common';
 import { catalogSeed } from '@app/contracts';
 import { AppModule } from './app.module';
 import { CatalogService } from './catalog.service';
@@ -49,6 +50,10 @@ describe('Catalog HTTP', () => {
       imports: [AppModule],
     }).compile();
     app = moduleRef.createNestApplication();
+    app.enableVersioning({
+      type: VersioningType.URI,
+      defaultVersion: API_VERSION,
+    });
     await app.init();
   });
 
@@ -56,8 +61,8 @@ describe('Catalog HTTP', () => {
     await app.close();
   });
 
-  it('GET /products returns the clothes catalog', async () => {
-    const response = await request(app.getHttpServer()).get('/products');
+  it('GET /v1/products returns the clothes catalog', async () => {
+    const response = await request(app.getHttpServer()).get('/v1/products');
     const body = response.body as { id: string }[];
     expect(response.status).toBe(200);
     expect(body).toHaveLength(8);

@@ -1,5 +1,13 @@
-import { Logger, Type, ValidationPipe } from '@nestjs/common';
+import {
+  Logger,
+  RequestMethod,
+  Type,
+  ValidationPipe,
+  VersioningType,
+} from '@nestjs/common';
 import { NestFactory } from '@nestjs/core';
+
+export const API_VERSION = '1';
 
 export async function bootstrap(
   module: Type<unknown>,
@@ -12,6 +20,10 @@ export async function bootstrap(
 ) {
   const app = await NestFactory.create(module);
   app.enableShutdownHooks();
+  app.enableVersioning({
+    type: VersioningType.URI,
+    defaultVersion: API_VERSION,
+  });
   app.useGlobalPipes(
     new ValidationPipe({
       whitelist: true,
@@ -29,7 +41,9 @@ export async function bootstrap(
   }
 
   if (options.prefix) {
-    app.setGlobalPrefix(options.prefix, { exclude: ['health'] });
+    app.setGlobalPrefix(options.prefix, {
+      exclude: [{ path: 'health', method: RequestMethod.GET }],
+    });
   }
 
   const port = Number(process.env.PORT ?? options.defaultPort);
