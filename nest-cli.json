@@ -73,6 +73,24 @@
         "tsConfigPath": "apps/sellers/tsconfig.app.json"
       }
     },
+    "payments": {
+      "type": "application",
+      "root": "apps/payments",
+      "entryFile": "main",
+      "sourceRoot": "apps/payments/src",
+      "compilerOptions": {
+        "tsConfigPath": "apps/payments/tsconfig.app.json"
+      }
+    },
+    "panel": {
+      "type": "application",
+      "root": "apps/panel",
+      "entryFile": "main",
+      "sourceRoot": "apps/panel/src",
+      "compilerOptions": {
+        "tsConfigPath": "apps/panel/tsconfig.app.json"
+      }
+    },
     "common": {
       "type": "library",
       "root": "libs/common",

@@ -26,6 +26,8 @@ x-data: &data
   ORDERS_URL: ${ORDERS_URL}
   ACCOUNT_URL: ${ACCOUNT_URL}
   SELLERS_URL: ${SELLERS_URL}
+  PAYMENTS_URL: ${PAYMENTS_URL}
+  PANEL_URL: ${PANEL_URL}
   KAVENEGAR_API_KEY: ${KAVENEGAR_API_KEY}
   KAVENEGAR_SENDER: ${KAVENEGAR_SENDER}
   OAUTH_CLIENT_ID: ${OAUTH_CLIENT_ID}
@@ -110,6 +112,10 @@ services:
         condition: service_healthy
       sellers:
         condition: service_healthy
+      payments:
+        condition: service_healthy
+      panel:
+        condition: service_healthy
 
   identity:
     profiles: ["apps"]
@@ -121,7 +127,7 @@ services:
     environment:
       <<: *data
       PORT: "3001"
-      DATABASE_URL: postgresql://${POSTGRES_USER}:${POSTGRES_PASSWORD}@postgres:5432/identity
+      IDENTITY_DATABASE_URL: postgresql://${POSTGRES_USER}:${POSTGRES_PASSWORD}@postgres:5432/identity
     depends_on:
       postgres:
         condition: service_healthy
@@ -141,7 +147,7 @@ services:
     environment:
       <<: *data
       PORT: "3002"
-      DATABASE_URL: postgresql://${POSTGRES_USER}:${POSTGRES_PASSWORD}@postgres:5432/catalog
+      CATALOG_DATABASE_URL: postgresql://${POSTGRES_USER}:${POSTGRES_PASSWORD}@postgres:5432/catalog
     depends_on:
       postgres:
         condition: service_healthy
@@ -161,7 +167,7 @@ services:
     environment:
       <<: *data
       PORT: "3003"
-      DATABASE_URL: postgresql://${POSTGRES_USER}:${POSTGRES_PASSWORD}@postgres:5432/cart
+      CART_DATABASE_URL: postgresql://${POSTGRES_USER}:${POSTGRES_PASSWORD}@postgres:5432/cart
     depends_on:
       postgres:
         condition: service_healthy
@@ -181,7 +187,7 @@ services:
     environment:
       <<: *data
       PORT: "3004"
-      DATABASE_URL: postgresql://${POSTGRES_USER}:${POSTGRES_PASSWORD}@postgres:5432/orders
+      ORDERS_DATABASE_URL: postgresql://${POSTGRES_USER}:${POSTGRES_PASSWORD}@postgres:5432/orders
     depends_on:
       postgres:
         condition: service_healthy
@@ -205,7 +211,7 @@ services:
     environment:
       <<: *data
       PORT: "3005"
-      DATABASE_URL: postgresql://${POSTGRES_USER}:${POSTGRES_PASSWORD}@postgres:5432/account
+      ACCOUNT_DATABASE_URL: postgresql://${POSTGRES_USER}:${POSTGRES_PASSWORD}@postgres:5432/account
     depends_on:
       postgres:
         condition: service_healthy
@@ -225,7 +231,47 @@ services:
     environment:
       <<: *data
       PORT: "3006"
-      DATABASE_URL: postgresql://${POSTGRES_USER}:${POSTGRES_PASSWORD}@postgres:5432/sellers
+      SELLERS_DATABASE_URL: postgresql://${POSTGRES_USER}:${POSTGRES_PASSWORD}@postgres:5432/sellers
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      rabbitmq:
+        condition: service_healthy
+    healthcheck: *health
+
+  payments:
+    profiles: ["apps"]
+    build:
+      context: .
+      args:
+        APP: payments
+    image: kernoon/payments:${IMAGE_TAG}
+    environment:
+      <<: *data
+      PORT: "3007"
+      PAYMENTS_DATABASE_URL: postgresql://${POSTGRES_USER}:${POSTGRES_PASSWORD}@postgres:5432/payments
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      rabbitmq:
+        condition: service_healthy
+    healthcheck: *health
+
+  panel:
+    profiles: ["apps"]
+    build:
+      context: .
+      args:
+        APP: panel
+    image: kernoon/panel:${IMAGE_TAG}
+    environment:
+      <<: *data
+      PORT: "3008"
+      PANEL_DATABASE_URL: postgresql://${POSTGRES_USER}:${POSTGRES_PASSWORD}@postgres:5432/panel
     depends_on:
       postgres:
         condition: service_healthy

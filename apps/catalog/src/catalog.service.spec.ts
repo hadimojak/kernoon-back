@@ -1,20 +1,42 @@
 import { INestApplication } from '@nestjs/common';
 import { Test } from '@nestjs/testing';
+import { Repository } from 'typeorm';
 import request from 'supertest';
 import { App } from 'supertest/types';
+import { catalogSeed } from '@app/contracts';
 import { AppModule } from './app.module';
 import { CatalogService } from './catalog.service';
+import { Product } from './models/product';
+
+function memoryCatalog() {
+  const rows = catalogSeed.map((product, position) => ({
+    ...product,
+    sizes: [...product.sizes],
+    position,
+  }));
+  const repo = {
+    count: async () => rows.length,
+    find: async () => rows,
+    findOne: async ({ where }: { where: { id: string } }) =>
+      rows.find((row) => row.id === where.id) ?? null,
+    create: (value: Product) => value,
+    save: async (value: Product | Product[]) => value,
+  };
+  return new CatalogService(repo as unknown as Repository<Product>);
+}
 
 describe('CatalogService', () => {
-  const catalog = new CatalogService();
+  const catalog = memoryCatalog();
 
-  it('filters by the frontend category ids', () => {
-    const newborn = catalog.list('newborn');
+  it('filters by the frontend category ids', async () => {
+    const newborn = await catalog.list('newborn');
     expect(newborn.map((product) => product.id)).toEqual(['onesie']);
   });
 
-  it('filters by size', () => {
-    const ids = catalog.list(undefined, '3-4').map((product) => product.id);
+  it('filters by size', async () => {
+    const ids = (await catalog.list(undefined, '3-4')).map(
+      (product) => product.id,
+    );
     expect(ids).toEqual(['joggers', 'overalls', 'hoodie']);
   });
 });

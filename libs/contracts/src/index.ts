@@ -20,9 +20,64 @@ export const roles = ['customer', 'seller', 'masterSeller'] as const;
 
 export type Role = (typeof roles)[number];
 
-export const cardBrands = ['visa', 'mastercard', 'amex', 'other'] as const;
+export const iranianBanks = [
+  'melli',
+  'mellat',
+  'saderat',
+  'sepah',
+  'tejarat',
+  'keshavarzi',
+  'maskan',
+  'refah',
+  'pasargad',
+  'parsian',
+  'saman',
+  'sarmayeh',
+  'ayandeh',
+  'other',
+] as const;
 
-export type CardBrand = (typeof cardBrands)[number];
+export type IranianBank = (typeof iranianBanks)[number];
+
+export const paymentGateways = ['zarinpal', 'idpay', 'saman', 'mellat'] as const;
+
+export type PaymentGateway = (typeof paymentGateways)[number];
+
+export const iranProvinces = [
+  'east-azerbaijan',
+  'west-azerbaijan',
+  'ardabil',
+  'isfahan',
+  'alborz',
+  'ilam',
+  'bushehr',
+  'tehran',
+  'chaharmahal-and-bakhtiari',
+  'south-khorasan',
+  'razavi-khorasan',
+  'north-khorasan',
+  'khuzestan',
+  'zanjan',
+  'semnan',
+  'sistan-and-baluchestan',
+  'fars',
+  'qazvin',
+  'qom',
+  'kurdistan',
+  'kerman',
+  'kermanshah',
+  'kohgiluyeh-and-boyer-ahmad',
+  'golestan',
+  'gilan',
+  'lorestan',
+  'mazandaran',
+  'markazi',
+  'hormozgan',
+  'hamadan',
+  'yazd',
+] as const;
+
+export type IranProvince = (typeof iranProvinces)[number];
 
 export type CatalogProduct = {
   id: string;

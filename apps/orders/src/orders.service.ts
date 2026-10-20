@@ -4,85 +4,75 @@ import {
   Injectable,
   NotFoundException,
 } from '@nestjs/common';
-import { randomBytes } from 'crypto';
+import { InjectRepository } from '@nestjs/typeorm';
+import { Repository } from 'typeorm';
 import { CatalogProduct } from '@app/contracts';
 import { lineTotal, ServiceClient, serviceUrls } from '@app/common';
 import { CreateOrderDto } from './dto';
+import { ShopOrder, ShopOrderItem } from './models/shop-order';
 
-type AddressSnapshot = {
+type AccountAddress = {
   id: string;
   fullName: string;
-  line1: string;
+  phone?: string;
+  province?: string;
   city: string;
   postalCode: string;
-  country: string;
+  street?: string;
+  line1?: string;
+  plaque?: string;
+  unit?: string;
+  region?: string;
 };
 
-type PaymentSnapshot = {
+type AccountPayment = {
   id: string;
-  brand: string;
+  bank?: string;
+  brand?: string;
   last4: string;
-};
-
-type OrderItem = {
-  productId: string;
-  name: string;
-  size: string;
-  tier: string;
-  quantity: number;
-  unitPriceUsd: number;
-  unitPriceToman: number;
-  lineUsd: number;
-  lineToman: number;
-};
-
-export type Order = {
-  id: string;
-  userId: string;
-  status: 'placed';
-  items: OrderItem[];
-  totalUsd: number;
-  totalToman: number;
-  address: AddressSnapshot;
-  payment: PaymentSnapshot;
-  createdAt: string;
 };
 
 @Injectable()
 export class OrdersService {
-  private readonly orders: Order[] = [];
+  constructor(
+    private readonly client: ServiceClient,
+    @InjectRepository(ShopOrder)
+    private readonly orders: Repository<ShopOrder>,
+    @InjectRepository(ShopOrderItem)
+    private readonly orderItems: Repository<ShopOrderItem>,
+  ) {}
 
-  constructor(private readonly client: ServiceClient) {}
-
-  list(userId: string) {
-    return this.orders.filter((order) => order.userId === userId);
+  async list(userId: string) {
+    const rows = await this.orders.find({
+      where: { userId },
+      order: { createdAt: 'DESC' },
+    });
+    return rows.map(present);
   }
 
-  get(userId: string, id: string) {
-    const order = this.orders.find(
-      (item) => item.userId === userId && item.id === id,
-    );
+  async get(userId: string, id: string) {
+    const order = await this.orders.findOne({ where: { userId, id } });
     if (!order) throw new NotFoundException('Order not found');
-    return order;
+    return present(order);
   }
 
   async create(userId: string, dto: CreateOrderDto) {
     const urls = serviceUrls();
     const headers = { 'x-user-id': userId };
-    const address = await this.readOwned<AddressSnapshot>(
+    const address = await this.readOwned<AccountAddress>(
       urls.account,
       'account',
       `/addresses/${dto.addressId}`,
       headers,
     );
-    const payment = await this.readOwned<PaymentSnapshot>(
+    const payment = await this.readOwned<AccountPayment>(
       urls.account,
       'account',
       `/payment-methods/${dto.paymentMethodId}`,
       headers,
     );
 
-    const items: OrderItem[] = [];
+    const items: ShopOrderItem[] = [];
     for (const line of dto.items) {
       const product = await this.readOwned<CatalogProduct>(
         urls.catalog,
@@ -95,46 +85,53 @@ export class OrdersService {
           `${product.name} is not sold in size ${line.size}`,
         );
       }
-      items.push({
-        productId: product.id,
-        name: product.name,
-        size: line.size,
-        tier: line.tier,
-        quantity: line.quantity,
-        unitPriceUsd: product.usd,
-        unitPriceToman: product.toman,
-        lineUsd: lineTotal(product.usd, line.quantity),
-        lineToman: product.toman * line.quantity,
-      });
+      items.push(
+        this.orderItems.create({
+          productId: product.id,
+          name: product.name,
+          size: line.size,
+          tier: line.tier,
+          quantity: line.quantity,
+          unitPriceUsd: product.usd,
+          unitPriceToman: product.toman,
+          lineUsd: lineTotal(product.usd, line.quantity),
+          lineToman: product.toman * line.quantity,
+        }),
+      );
     }
 
-    const order: Order = {
-      id: randomBytes(8).toString('hex'),
-      userId,
-      status: 'placed',
-      items,
-      totalUsd: lineTotal(
-        items.reduce((sum, item) => sum + item.lineUsd, 0),
-        1,
-      ),
-      totalToman: items.reduce((sum, item) => sum + item.lineToman, 0),
-      address: {
-        id: address.id,
-        fullName: address.fullName,
-        line1: address.line1,
-        city: address.city,
-        postalCode: address.postalCode,
-        country: address.country,
-      },
-      payment: {
-        id: payment.id,
-        brand: payment.brand,
-        last4: payment.last4,
-      },
-      createdAt: new Date().toISOString(),
-    };
-    this.orders.push(order);
-    return order;
+    const street = address.street || address.line1 || '';
+    const province = address.province || address.region || '';
+    const bank = payment.bank || payment.brand || '';
+    const saved = await this.orders.save(
+      this.orders.create({
+        userId,
+        status: 'placed',
+        items,
+        totalUsd: lineTotal(
+          items.reduce((sum, item) => sum + item.lineUsd, 0),
+          1,
+        ),
+        totalToman: items.reduce((sum, item) => sum + item.lineToman, 0),
+        address: {
+          id: address.id,
+          fullName: address.fullName,
+          phone: address.phone ?? '',
+          province,
+          city: address.city,
+          postalCode: address.postalCode,
+          street,
+          plaque: address.plaque ?? '',
+          unit: address.unit ?? '',
+        },
+        payment: {
+          id: payment.id,
+          bank,
+          last4: payment.last4,
+        },
+      }),
+    );
+    return present(saved);
   }
 
   private async readOwned<T>(
@@ -161,4 +158,36 @@ export class OrdersService {
     }
     return result.data;
   }
+}
+
+function present(order: ShopOrder) {
+  return {
+    id: order.id,
+    userId: order.userId,
+    status: order.status,
+    items: order.items.map((item) => ({
+      productId: item.productId,
+      name: item.name,
+      size: item.size,
+      tier: item.tier,
+      quantity: item.quantity,
+      unitPriceUsd: item.unitPriceUsd,
+      unitPriceToman: item.unitPriceToman,
+      lineUsd: item.lineUsd,
+      lineToman: item.lineToman,
+    })),
+    totalUsd: order.totalUsd,
+    totalToman: order.totalToman,
+    address: {
+      ...order.address,
+      line1: order.address.street,
+      region: order.address.province,
+      country: 'IR',
+    },
+    payment: {
+      ...order.payment,
+      brand: order.payment.bank,
+    },
+    createdAt: order.createdAt.toISOString(),
+  };
 }

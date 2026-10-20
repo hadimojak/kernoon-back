@@ -9,40 +9,42 @@ import {
   Min,
   MinLength,
 } from 'class-validator';
-import { cardBrands, CardBrand } from '@app/contracts';
+import {
+  iranianBanks,
+  IranianBank,
+  iranProvinces,
+  IranProvince,
+} from '@app/contracts';
 
 export class AddressDto {
   @IsString()
   @MinLength(1)
   fullName!: string;
 
-  @IsOptional()
-  @IsString()
-  phone?: string;
+  @Matches(/^09\d{9}$/)
+  phone!: string;
 
-  @IsString()
-  @MinLength(1)
-  line1!: string;
-
-  @IsOptional()
-  @IsString()
-  line2?: string;
+  @IsIn(iranProvinces)
+  province!: IranProvince;
 
   @IsString()
   @MinLength(1)
   city!: string;
 
-  @IsOptional()
-  @IsString()
-  region?: string;
-
-  @IsString()
-  @MinLength(1)
+  @Matches(/^\d{10}$/)
   postalCode!: string;
 
   @IsString()
   @MinLength(1)
-  country!: string;
+  street!: string;
+
+  @IsOptional()
+  @IsString()
+  plaque?: string;
+
+  @IsOptional()
+  @IsString()
+  unit?: string;
 
   @IsOptional()
   @IsBoolean()
@@ -54,8 +56,8 @@ export class PaymentMethodDto {
   @MinLength(1)
   holderName!: string;
 
-  @IsIn(cardBrands)
-  brand!: CardBrand;
+  @IsIn(iranianBanks)
+  bank!: IranianBank;
 
   @Matches(/^\d{4}$/)
   last4!: string;

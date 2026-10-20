@@ -7,6 +7,8 @@ import { GatewayModule } from './gateway.module';
 import { HealthController } from './health.controller';
 import { IdentityModule } from './identity.module';
 import { OrdersModule } from './orders.module';
+import { PanelModule } from './panel.module';
+import { PaymentsModule } from './payments.module';
 import { SellersModule } from './sellers.module';
 
 @Module({
@@ -19,6 +21,8 @@ import { SellersModule } from './sellers.module';
     OrdersModule,
     AccountModule,
     SellersModule,
+    PaymentsModule,
+    PanelModule,
   ],
   controllers: [HealthController],
 })

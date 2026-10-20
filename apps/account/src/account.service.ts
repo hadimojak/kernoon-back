@@ -1,105 +1,160 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
-import { randomBytes } from 'crypto';
+import { InjectRepository } from '@nestjs/typeorm';
+import { Repository } from 'typeorm';
 import { AddressDto, PaymentMethodDto } from './dto';
-
-export type Address = AddressDto & { id: string; userId: string };
-export type PaymentMethod = PaymentMethodDto & { id: string; userId: string };
+import { DeliveryAddress } from './models/delivery-address';
+import { ShetabCard } from './models/shetab-card';
 
 @Injectable()
 export class AccountService {
-  private readonly addresses: Address[] = [];
-  private readonly payments: PaymentMethod[] = [];
+  constructor(
+    @InjectRepository(DeliveryAddress)
+    private readonly addresses: Repository<DeliveryAddress>,
+    @InjectRepository(ShetabCard)
+    private readonly cards: Repository<ShetabCard>,
+  ) {}
 
-  listAddresses(userId: string) {
-    return this.addresses.filter((address) => address.userId === userId);
+  async listAddresses(userId: string) {
+    const rows = await this.addresses.find({
+      where: { userId },
+      order: { createdAt: 'ASC' },
+    });
+    return rows.map(presentAddress);
   }
 
-  getAddress(userId: string, id: string) {
-    return this.requireAddress(userId, id);
+  async getAddress(userId: string, id: string) {
+    return presentAddress(await this.requireAddress(userId, id));
   }
 
-  addAddress(userId: string, dto: AddressDto) {
-    const address: Address = {
-      ...dto,
-      phone: dto.phone ?? '',
-      line2: dto.line2 ?? '',
-      region: dto.region ?? '',
-      isDefault: dto.isDefault ?? this.listAddresses(userId).length === 0,
-      id: randomBytes(8).toString('hex'),
-      userId,
-    };
-    if (address.isDefault) this.clearDefaultAddress(userId);
-    this.addresses.push(address);
-    return address;
-  }
-
-  removeAddress(userId: string, id: string) {
-    const index = this.addresses.findIndex(
-      (address) => address.userId === userId && address.id === id,
+  async addAddress(userId: string, dto: AddressDto) {
+    const count = await this.addresses.count({ where: { userId } });
+    const isDefault = dto.isDefault ?? count === 0;
+    if (isDefault) {
+      await this.addresses.update({ userId }, { isDefault: false });
+    }
+    const saved = await this.addresses.save(
+      this.addresses.create({
+        userId,
+        fullName: dto.fullName.trim(),
+        phone: dto.phone,
+        province: dto.province,
+        city: dto.city.trim(),
+        postalCode: dto.postalCode,
+        street: dto.street.trim(),
+        plaque: dto.plaque?.trim() ?? '',
+        unit: dto.unit?.trim() ?? '',
+        isDefault,
+      }),
     );
-    if (index === -1) throw new NotFoundException('Address not found');
-    const [removed] = this.addresses.splice(index, 1);
-    if (removed.isDefault) {
-      const next = this.listAddresses(userId)[0];
-      if (next) next.isDefault = true;
+    return presentAddress(saved);
+  }
+
+  async removeAddress(userId: string, id: string) {
+    const row = await this.requireAddress(userId, id);
+    await this.addresses.remove(row);
+    if (row.isDefault) {
+      const next = await this.addresses.findOne({
+        where: { userId },
+        order: { createdAt: 'ASC' },
+      });
+      if (next) {
+        next.isDefault = true;
+        await this.addresses.save(next);
+      }
     }
     return { deleted: true };
   }
 
-  listPayments(userId: string) {
-    return this.payments.filter((payment) => payment.userId === userId);
+  async listPayments(userId: string) {
+    const rows = await this.cards.find({
+      where: { userId },
+      order: { createdAt: 'ASC' },
+    });
+    return rows.map(presentCard);
   }
 
-  getPayment(userId: string, id: string) {
-    return this.requirePayment(userId, id);
+  async getPayment(userId: string, id: string) {
+    return presentCard(await this.requireCard(userId, id));
   }
 
-  addPayment(userId: string, dto: PaymentMethodDto) {
-    const payment: PaymentMethod = {
-      ...dto,
-      isDefault: dto.isDefault ?? this.listPayments(userId).length === 0,
-      id: randomBytes(8).toString('hex'),
-      userId,
-    };
-    if (payment.isDefault) this.clearDefaultPayment(userId);
-    this.payments.push(payment);
-    return payment;
-  }
-
-  removePayment(userId: string, id: string) {
-    const index = this.payments.findIndex(
-      (payment) => payment.userId === userId && payment.id === id,
+  async addPayment(userId: string, dto: PaymentMethodDto) {
+    const count = await this.cards.count({ where: { userId } });
+    const isDefault = dto.isDefault ?? count === 0;
+    if (isDefault) {
+      await this.cards.update({ userId }, { isDefault: false });
+    }
+    const saved = await this.cards.save(
+      this.cards.create({
+        userId,
+        holderName: dto.holderName.trim(),
+        bank: dto.bank,
+        last4: dto.last4,
+        expMonth: dto.expMonth,
+        expYear: dto.expYear,
+        isDefault,
+      }),
     );
-    if (index === -1) throw new NotFoundException('Payment method not found');
-    const [removed] = this.payments.splice(index, 1);
-    if (removed.isDefault) {
-      const next = this.listPayments(userId)[0];
-      if (next) next.isDefault = true;
+    return presentCard(saved);
+  }
+
+  async removePayment(userId: string, id: string) {
+    const row = await this.requireCard(userId, id);
+    await this.cards.remove(row);
+    if (row.isDefault) {
+      const next = await this.cards.findOne({
+        where: { userId },
+        order: { createdAt: 'ASC' },
+      });
+      if (next) {
+        next.isDefault = true;
+        await this.cards.save(next);
+      }
     }
     return { deleted: true };
   }
 
-  private requireAddress(userId: string, id: string) {
-    const address = this.addresses.find(
-      (item) => item.userId === userId && item.id === id,
-    );
-    if (!address) throw new NotFoundException('Address not found');
-    return address;
+  private async requireAddress(userId: string, id: string) {
+    const row = await this.addresses.findOne({ where: { userId, id } });
+    if (!row) throw new NotFoundException('Address not found');
+    return row;
   }
 
-  private requirePayment(userId: string, id: string) {
-    const payment = this.payments.find(
-      (item) => item.userId === userId && item.id === id,
-    );
-    if (!payment) throw new NotFoundException('Payment method not found');
-    return payment;
+  private async requireCard(userId: string, id: string) {
+    const row = await this.cards.findOne({ where: { userId, id } });
+    if (!row) throw new NotFoundException('Payment method not found');
+    return row;
   }
+}
 
-  private clearDefaultAddress(userId: string) {
-    for (const address of this.listAddresses(userId)) address.isDefault = false;
-  }
+function presentAddress(address: DeliveryAddress) {
+  return {
+    id: address.id,
+    userId: address.userId,
+    fullName: address.fullName,
+    phone: address.phone,
+    province: address.province,
+    city: address.city,
+    postalCode: address.postalCode,
+    street: address.street,
+    plaque: address.plaque,
+    unit: address.unit,
+    isDefault: address.isDefault,
+    line1: address.street,
+    region: address.province,
+    country: 'IR',
+  };
+}
 
-  private clearDefaultPayment(userId: string) {
-    for (const payment of this.listPayments(userId)) payment.isDefault = false;
-  }
+function presentCard(card: ShetabCard) {
+  return {
+    id: card.id,
+    userId: card.userId,
+    holderName: card.holderName,
+    bank: card.bank,
+    brand: card.bank,
+    last4: card.last4,
+    expMonth: card.expMonth,
+    expYear: card.expYear,
+    isDefault: card.isDefault,
+  };
 }

@@ -13,6 +13,8 @@ x-data: &data
   ORDERS_URL: ${ORDERS_URL}
   ACCOUNT_URL: ${ACCOUNT_URL}
   SELLERS_URL: ${SELLERS_URL}
+  PAYMENTS_URL: ${PAYMENTS_URL}
+  PANEL_URL: ${PANEL_URL}
   KAVENEGAR_API_KEY: ${KAVENEGAR_API_KEY}
   KAVENEGAR_SENDER: ${KAVENEGAR_SENDER}
   OAUTH_CLIENT_ID: ${OAUTH_CLIENT_ID}
@@ -105,7 +107,7 @@ services:
     environment:
       <<: *data
       PORT: "3001"
-      DATABASE_URL: postgresql://${POSTGRES_USER}:${POSTGRES_PASSWORD}@postgres:5432/identity
+      IDENTITY_DATABASE_URL: postgresql://${POSTGRES_USER}:${POSTGRES_PASSWORD}@postgres:5432/identity
     networks:
       - kernoon
     deploy:
@@ -116,7 +118,7 @@ services:
     environment:
       <<: *data
       PORT: "3002"
-      DATABASE_URL: postgresql://${POSTGRES_USER}:${POSTGRES_PASSWORD}@postgres:5432/catalog
+      CATALOG_DATABASE_URL: postgresql://${POSTGRES_USER}:${POSTGRES_PASSWORD}@postgres:5432/catalog
     networks:
       - kernoon
     deploy:
@@ -127,7 +129,7 @@ services:
     environment:
       <<: *data
       PORT: "3003"
-      DATABASE_URL: postgresql://${POSTGRES_USER}:${POSTGRES_PASSWORD}@postgres:5432/cart
+      CART_DATABASE_URL: postgresql://${POSTGRES_USER}:${POSTGRES_PASSWORD}@postgres:5432/cart
     networks:
       - kernoon
     deploy:
@@ -138,7 +140,7 @@ services:
     environment:
       <<: *data
       PORT: "3004"
-      DATABASE_URL: postgresql://${POSTGRES_USER}:${POSTGRES_PASSWORD}@postgres:5432/orders
+      ORDERS_DATABASE_URL: postgresql://${POSTGRES_USER}:${POSTGRES_PASSWORD}@postgres:5432/orders
     networks:
       - kernoon
     deploy:
@@ -149,7 +151,7 @@ services:
     environment:
       <<: *data
       PORT: "3005"
-      DATABASE_URL: postgresql://${POSTGRES_USER}:${POSTGRES_PASSWORD}@postgres:5432/account
+      ACCOUNT_DATABASE_URL: postgresql://${POSTGRES_USER}:${POSTGRES_PASSWORD}@postgres:5432/account
     networks:
       - kernoon
     deploy:
@@ -160,7 +162,29 @@ services:
     environment:
       <<: *data
       PORT: "3006"
-      DATABASE_URL: postgresql://${POSTGRES_USER}:${POSTGRES_PASSWORD}@postgres:5432/sellers
+      SELLERS_DATABASE_URL: postgresql://${POSTGRES_USER}:${POSTGRES_PASSWORD}@postgres:5432/sellers
+    networks:
+      - kernoon
+    deploy:
+      replicas: 1
+
+  payments:
+    image: kernoon/payments:${IMAGE_TAG}
+    environment:
+      <<: *data
+      PORT: "3007"
+      PAYMENTS_DATABASE_URL: postgresql://${POSTGRES_USER}:${POSTGRES_PASSWORD}@postgres:5432/payments
+    networks:
+      - kernoon
+    deploy:
+      replicas: 1
+
+  panel:
+    image: kernoon/panel:${IMAGE_TAG}
+    environment:
+      <<: *data
+      PORT: "3008"
+      PANEL_DATABASE_URL: postgresql://${POSTGRES_USER}:${POSTGRES_PASSWORD}@postgres:5432/panel
     networks:
       - kernoon
     deploy:
