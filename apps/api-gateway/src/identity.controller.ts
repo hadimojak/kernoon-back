@@ -108,6 +108,50 @@ export class IdentityController {
     );
   }
 
+  @Post('auth/seller/phone/code')
+  sellerPhoneCode(
+    @Req() req: GatewayRequest,
+    @Res({ passthrough: true }) res: Response,
+  ) {
+    return reply(
+      res,
+      this.gateway.forward('identity', req, '/auth/seller/phone/code'),
+    );
+  }
+
+  @Post('auth/seller/phone/login')
+  sellerPhoneLogin(
+    @Req() req: GatewayRequest,
+    @Res({ passthrough: true }) res: Response,
+  ) {
+    return reply(
+      res,
+      this.gateway.forward('identity', req, '/auth/seller/phone/login'),
+    );
+  }
+
+  @Post('auth/seller/email/code')
+  sellerEmailCode(
+    @Req() req: GatewayRequest,
+    @Res({ passthrough: true }) res: Response,
+  ) {
+    return reply(
+      res,
+      this.gateway.forward('identity', req, '/auth/seller/email/code'),
+    );
+  }
+
+  @Post('auth/seller/email/login')
+  sellerEmailLogin(
+    @Req() req: GatewayRequest,
+    @Res({ passthrough: true }) res: Response,
+  ) {
+    return reply(
+      res,
+      this.gateway.forward('identity', req, '/auth/seller/email/login'),
+    );
+  }
+
   @Get('profile')
   @UseGuards(JwtAuthGuard)
   profile(

@@ -128,6 +128,32 @@ export class UsersService implements OnModuleInit {
     return user;
   }
 
+  async requireSellerByPhone(phoneInput: string) {
+    const user = await this.findByPhone(this.phoneNumber(phoneInput));
+    return this.requireSeller(user);
+  }
+
+  async requireSellerByEmail(emailInput: string) {
+    return this.requireSeller(await this.requireByEmail(emailInput));
+  }
+
+  async sellerSessionForPhone(phoneInput: string) {
+    const user = await this.requireSellerByPhone(phoneInput);
+    user.phoneVerified = true;
+    return this.tokenResponse(await this.saveUser(user));
+  }
+
+  sellerSessionFor(user: IdentityUser) {
+    return this.tokenResponse(this.requireSeller(user));
+  }
+
+  private requireSeller(user: IdentityUser | null) {
+    if (!user || (user.role !== 'seller' && user.role !== 'masterSeller')) {
+      throw new UnauthorizedException('This account cannot open the sellers panel');
+    }
+    return user;
+  }
+
   async getProfile(userId: string) {
     return this.publicUser(await this.requireUser(userId));
   }

@@ -8,11 +8,12 @@ import { OauthController } from './oauth.controller';
 import { OauthService } from './oauth.service';
 import { PhoneController } from './phone.controller';
 import { PhoneCodeService } from './phone-code.service';
+import { SellerOtpController } from './seller-otp.controller';
 import { SmsSender } from './sms.sender';
 
 @Module({
   imports: [RedisModule, UsersModule],
-  controllers: [PhoneController, EmailController, OauthController],
+  controllers: [PhoneController, EmailController, SellerOtpController, OauthController],
   providers: [SmsSender, EmailSender, PhoneCodeService, EmailCodeService, OauthService],
 })
 export class AuthModule {}
