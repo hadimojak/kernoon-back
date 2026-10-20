@@ -1,9 +1,9 @@
 import { config } from 'dotenv';
 import pg from 'pg';
 import { DataSource } from 'typeorm';
-import { Customer } from './models/customer';
-import { MasterSeller } from './models/master-seller';
-import { Seller } from './models/seller';
+import { Customer } from './users/models/customer';
+import { MasterSeller } from './users/models/master-seller';
+import { Seller } from './users/models/seller';
 
 config({ path: '.env.development' });
 

@@ -6,7 +6,7 @@ module.exports = function (options) {
     ...options,
     externals: [
       ...(Array.isArray(externals) ? externals : externals ? [externals] : []),
-      { pg: 'commonjs pg' },
+      { pg: 'commonjs pg', ioredis: 'commonjs ioredis' },
     ],
     resolve: {
       ...options.resolve,

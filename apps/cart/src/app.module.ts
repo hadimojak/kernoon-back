@@ -1,15 +1,13 @@
 import { Module } from '@nestjs/common';
 import { AppConfigModule, databaseModule, HealthModule } from '@app/common';
-import { CartController } from './cart.controller';
-import { CartService } from './cart.service';
+import { CartModule } from './cart.module';
 
 @Module({
   imports: [
     AppConfigModule,
     databaseModule('CART_DATABASE_URL'),
     HealthModule.forRoot('cart'),
+    CartModule,
   ],
-  controllers: [CartController],
-  providers: [CartService],
 })
 export class AppModule {}

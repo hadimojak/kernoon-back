@@ -8,7 +8,7 @@ import { JwtService } from '@nestjs/jwt';
 import { Role } from '@app/contracts';
 import { GatewayRequest } from './gateway.service';
 
-type AccessToken = { sub: string; email: string; role: Role };
+type AccessToken = { sub: string; email: string; role: Role; typ?: string };
 
 @Injectable()
 export class JwtAuthGuard implements CanActivate {
@@ -24,6 +24,7 @@ export class JwtAuthGuard implements CanActivate {
       const payload = this.jwt.verify<AccessToken>(
         header.slice('Bearer '.length),
       );
+      if (payload.typ !== 'access') throw new UnauthorizedException();
       req.user = { id: payload.sub, email: payload.email, role: payload.role };
       return true;
     } catch {

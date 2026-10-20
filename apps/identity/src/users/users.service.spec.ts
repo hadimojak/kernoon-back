@@ -1,6 +1,8 @@
 import { ConflictException, UnauthorizedException } from '@nestjs/common';
+import { ConfigService } from '@nestjs/config';
 import { JwtService } from '@nestjs/jwt';
 import { Repository } from 'typeorm';
+import { RedisService } from '../infrastructure/redis.service';
 import { Customer } from './models/customer';
 import { MasterSeller } from './models/master-seller';
 import { Seller } from './models/seller';
@@ -33,10 +35,35 @@ function memoryRepository<T extends Row>(Entity: new () => T) {
   } as unknown as Repository<T>;
 }
 
+function memoryRedis() {
+  const store = new Map<string, string>();
+  return {
+    get: (key: string) => Promise.resolve(store.get(key) ?? null),
+    set: (key: string, value: string) => {
+      store.set(key, value);
+      return Promise.resolve();
+    },
+    del: (key: string) => {
+      store.delete(key);
+      return Promise.resolve();
+    },
+  } as unknown as RedisService;
+}
+
 describe('UsersService', () => {
   const jwt = {
-    sign: jest.fn().mockReturnValue('token'),
+    sign: jest.fn((payload: { jti?: string }) =>
+      payload.jti ? `refresh:${payload.jti}` : 'access',
+    ),
+    verify: jest.fn((token: string) => ({
+      sub: 'id-1',
+      typ: 'refresh',
+      jti: token.slice('refresh:'.length),
+    })),
   } as unknown as JwtService;
+  const config = {
+    get: (_key: string, fallback?: string) => fallback,
+  } as ConfigService;
   let users: UsersService;
 
   beforeEach(async () => {
@@ -45,6 +72,8 @@ describe('UsersService', () => {
       memoryRepository(Customer),
       memoryRepository(Seller),
       memoryRepository(MasterSeller),
+      memoryRedis(),
+      config,
     );
     await users.onModuleInit();
   });
@@ -54,9 +83,23 @@ describe('UsersService', () => {
       { email: 'hadimojak@gmail.com', password: 'Password1' },
       'customer',
     );
-    expect(result.accessToken).toBe('token');
+    expect(result.accessToken).toBe('access');
+    expect(result.refreshToken.startsWith('refresh:')).toBe(true);
     expect(result.user.firstName).toBe('hadi');
     expect(result.user.role).toBe('customer');
+  });
+
+  it('rotates the refresh token', async () => {
+    const login = await users.login(
+      { email: 'hadimojak@gmail.com', password: 'Password1' },
+      'customer',
+    );
+    const refreshed = await users.refresh(login.refreshToken);
+    expect(refreshed.accessToken).toBe('access');
+    expect(refreshed.refreshToken).not.toBe(login.refreshToken);
+    await expect(users.refresh(login.refreshToken)).rejects.toThrow(
+      UnauthorizedException,
+    );
   });
 
   it('rejects a customer password on the seller login', async () => {
@@ -77,6 +120,15 @@ describe('UsersService', () => {
         password: 'short',
       }),
     ).rejects.toThrow(/uppercase letter/);
+  });
+
+  it('creates a customer from an Iranian mobile number', async () => {
+    const created = await users.accountForPhone('+98 912 123 4567');
+    expect(created.phone).toBe('09121234567');
+    expect(created.role).toBe('customer');
+    expect(created.phoneVerified).toBe(true);
+    const again = await users.accountForPhone('09121234567');
+    expect(again.id).toBe(created.id);
   });
 
   it('rejects a duplicate email', async () => {

@@ -13,7 +13,7 @@ export abstract class UserAccount {
   @Column({ type: 'varchar', nullable: true, unique: true })
   email!: string | null;
 
-  @Column({ type: 'varchar', nullable: true })
+  @Column({ type: 'varchar', nullable: true, unique: true })
   phone!: string | null;
 
   @Column({ default: '' })

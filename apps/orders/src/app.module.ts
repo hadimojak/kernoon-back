@@ -1,20 +1,13 @@
 import { Module } from '@nestjs/common';
-import {
-  AppConfigModule,
-  databaseModule,
-  HealthModule,
-  ServiceClient,
-} from '@app/common';
-import { OrdersController } from './orders.controller';
-import { OrdersService } from './orders.service';
+import { AppConfigModule, databaseModule, HealthModule } from '@app/common';
+import { OrdersModule } from './orders.module';
 
 @Module({
   imports: [
     AppConfigModule,
     databaseModule('ORDERS_DATABASE_URL'),
     HealthModule.forRoot('orders'),
+    OrdersModule,
   ],
-  controllers: [OrdersController],
-  providers: [OrdersService, ServiceClient],
 })
 export class AppModule {}

@@ -29,6 +29,52 @@ export class IdentityController {
     return reply(res, this.gateway.forward('identity', req, '/auth/login'));
   }
 
+  @Post('auth/phone/code')
+  phoneCode(
+    @Req() req: GatewayRequest,
+    @Res({ passthrough: true }) res: Response,
+  ) {
+    return reply(
+      res,
+      this.gateway.forward('identity', req, '/auth/phone/code'),
+    );
+  }
+
+  @Post('auth/phone/login')
+  phoneLogin(
+    @Req() req: GatewayRequest,
+    @Res({ passthrough: true }) res: Response,
+  ) {
+    return reply(
+      res,
+      this.gateway.forward('identity', req, '/auth/phone/login'),
+    );
+  }
+
+  @Post('oauth/authorize')
+  authorize(
+    @Req() req: GatewayRequest,
+    @Res({ passthrough: true }) res: Response,
+  ) {
+    return reply(
+      res,
+      this.gateway.forward('identity', req, '/oauth/authorize'),
+    );
+  }
+
+  @Post('oauth/token')
+  token(@Req() req: GatewayRequest, @Res({ passthrough: true }) res: Response) {
+    return reply(res, this.gateway.forward('identity', req, '/oauth/token'));
+  }
+
+  @Post('auth/refresh')
+  refresh(
+    @Req() req: GatewayRequest,
+    @Res({ passthrough: true }) res: Response,
+  ) {
+    return reply(res, this.gateway.forward('identity', req, '/auth/refresh'));
+  }
+
   @Post('auth/seller/login')
   sellerLogin(
     @Req() req: GatewayRequest,

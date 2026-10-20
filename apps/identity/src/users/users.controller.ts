@@ -1,5 +1,5 @@
 import { Body, Controller, Post } from '@nestjs/common';
-import { LoginDto, SignupDto } from './dto';
+import { LoginDto, RefreshDto, SignupDto } from './account.dto';
 import { UsersService } from './users.service';
 
 @Controller('auth')
@@ -19,5 +19,10 @@ export class UsersController {
   @Post('seller/login')
   sellerLogin(@Body() dto: LoginDto) {
     return this.users.login(dto, ['seller', 'masterSeller']);
+  }
+
+  @Post('refresh')
+  refresh(@Body() dto: RefreshDto) {
+    return this.users.refresh(dto.refreshToken);
   }
 }

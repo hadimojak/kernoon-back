@@ -1,7 +1,7 @@
 import { Body, Controller, Get, Patch, Req } from '@nestjs/common';
 import { Request } from 'express';
 import { requireUserId } from '@app/common';
-import { ChangePasswordDto, UpdateProfileDto } from './dto';
+import { ChangePasswordDto, UpdateProfileDto } from './account.dto';
 import { UsersService } from './users.service';
 
 @Controller('profile')
