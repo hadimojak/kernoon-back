@@ -40,6 +40,28 @@ export class IdentityController {
     );
   }
 
+  @Post('auth/email/code')
+  emailCode(
+    @Req() req: GatewayRequest,
+    @Res({ passthrough: true }) res: Response,
+  ) {
+    return reply(
+      res,
+      this.gateway.forward('identity', req, '/auth/email/code'),
+    );
+  }
+
+  @Post('auth/email/login')
+  emailLogin(
+    @Req() req: GatewayRequest,
+    @Res({ passthrough: true }) res: Response,
+  ) {
+    return reply(
+      res,
+      this.gateway.forward('identity', req, '/auth/email/login'),
+    );
+  }
+
   @Post('auth/phone/login')
   phoneLogin(
     @Req() req: GatewayRequest,

@@ -4,6 +4,7 @@ import {
   IsOptional,
   IsString,
   MinLength,
+  ValidateIf,
 } from 'class-validator';
 
 export class SignupDto {
@@ -15,8 +16,14 @@ export class SignupDto {
   @MinLength(1)
   lastName!: string;
 
+  @IsString()
+  @MinLength(10)
+  phone!: string;
+
+  @IsOptional()
+  @ValidateIf((dto: SignupDto) => Boolean(dto.email?.trim()))
   @IsEmail()
-  email!: string;
+  email?: string;
 
   @IsString()
   @MinLength(6)
@@ -24,8 +31,14 @@ export class SignupDto {
 }
 
 export class LoginDto {
+  @ValidateIf((dto: LoginDto) => !dto.username?.trim())
   @IsEmail()
-  email!: string;
+  email?: string;
+
+  @ValidateIf((dto: LoginDto) => !dto.email?.trim())
+  @IsString()
+  @MinLength(1)
+  username?: string;
 
   @IsString()
   password!: string;

@@ -73,8 +73,13 @@ export class UsersService implements OnModuleInit {
 
   async signup(dto: SignupDto) {
     this.assertPassword(dto.password);
-    const email = dto.email.trim().toLowerCase();
-    if (await this.findByEmail(email)) {
+    const phone = this.phoneNumber(dto.phone);
+    if (await this.findByPhone(phone)) {
+      throw new ConflictException('An account with this phone already exists');
+    }
+
+    const email = dto.email?.trim().toLowerCase() || null;
+    if (email && (await this.findByEmail(email))) {
       throw new ConflictException('An account with this email already exists');
     }
 
@@ -82,6 +87,7 @@ export class UsersService implements OnModuleInit {
       firstName: dto.firstName.trim(),
       lastName: dto.lastName.trim(),
       email,
+      phone,
       role: 'customer',
       password: dto.password,
     });
@@ -90,16 +96,26 @@ export class UsersService implements OnModuleInit {
 
   async login(dto: LoginDto, allowed: Role | Role[]) {
     const roles = Array.isArray(allowed) ? allowed : [allowed];
-    const user = await this.findByEmail(dto.email.trim().toLowerCase());
+    const identifier = (dto.username ?? dto.email ?? '').trim();
+    const user = await this.findForPassword(identifier);
     if (
       !user ||
       !roles.includes(user.role) ||
       !user.passwordHash ||
       !verifyPassword(dto.password, user.passwordHash)
     ) {
-      throw new UnauthorizedException('Invalid email or password');
+      throw new UnauthorizedException('Invalid username or password');
     }
     return this.tokenResponse(user);
+  }
+
+  async requireByEmail(emailInput: string) {
+    const email = emailInput.trim().toLowerCase();
+    const user = await this.findByEmail(email);
+    if (!user) {
+      throw new NotFoundException('No account uses this email');
+    }
+    return user;
   }
 
   async getProfile(userId: string) {
@@ -175,7 +191,8 @@ export class UsersService implements OnModuleInit {
   private async createUser(input: {
     firstName: string;
     lastName: string;
-    email: string;
+    email: string | null;
+    phone?: string | null;
     password: string;
     role: Role;
     businessName?: string;
@@ -185,7 +202,7 @@ export class UsersService implements OnModuleInit {
       firstName: input.firstName,
       lastName: input.lastName,
       email: input.email,
-      phone: null,
+      phone: input.phone ?? null,
       gender: '',
       passwordHash: hashPassword(input.password),
       googleSubject: null,
@@ -262,6 +279,19 @@ export class UsersService implements OnModuleInit {
       (await this.sellers.findOne({ where: { phone } })) ??
       (await this.masterSellers.findOne({ where: { phone } }))
     );
+  }
+
+  private async findForPassword(identifier: string) {
+    if (!identifier) return null;
+    if (identifier.includes('@')) {
+      return this.findByEmail(identifier.toLowerCase());
+    }
+    const phone = normalizePhone(identifier);
+    if (phone) {
+      const byPhone = await this.findByPhone(phone);
+      if (byPhone) return byPhone;
+    }
+    return this.findByEmail(identifier.toLowerCase());
   }
 
   private async findByEmail(email: string) {
