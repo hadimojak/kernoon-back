@@ -12,6 +12,38 @@ export const sizeIds = ['0-3', '3-6', '6-12', '1-2', '2-3', '3-4'] as const;
 
 export type SizeId = (typeof sizeIds)[number];
 
+/** Per-size body / garment measurements for a product size guide. */
+export type SizeGuideRow = {
+  size: SizeId;
+  heightCm: string;
+  chestCm: string;
+  waistCm: string;
+  note?: string;
+};
+
+const defaultMeasurements: Record<
+  SizeId,
+  Pick<SizeGuideRow, 'heightCm' | 'chestCm' | 'waistCm'>
+> = {
+  '0-3': { heightCm: '50–61', chestCm: '40–43', waistCm: '40–43' },
+  '3-6': { heightCm: '61–67', chestCm: '43–45', waistCm: '43–45' },
+  '6-12': { heightCm: '67–74', chestCm: '45–48', waistCm: '45–47' },
+  '1-2': { heightCm: '74–86', chestCm: '48–51', waistCm: '47–50' },
+  '2-3': { heightCm: '86–98', chestCm: '51–54', waistCm: '50–53' },
+  '3-4': { heightCm: '98–104', chestCm: '54–56', waistCm: '53–55' },
+};
+
+export function defaultSizeGuide(
+  sizes: SizeId[],
+  note?: string,
+): SizeGuideRow[] {
+  return sizes.map((size) => ({
+    size,
+    ...defaultMeasurements[size],
+    ...(note ? { note } : {}),
+  }));
+}
+
 export const tiers = ['standard', 'deluxe', 'premium'] as const;
 
 export type Tier = (typeof tiers)[number];
@@ -93,6 +125,7 @@ export type CatalogProduct = {
   images: string[];
   category: Category;
   sizes: SizeId[];
+  sizeGuide: SizeGuideRow[];
   stock: number;
   description: string;
   masterSellerId?: string;
@@ -111,7 +144,7 @@ export const seedProductIds = {
   dress: 'b0000000-0000-4000-8000-000000000008',
 } as const;
 
-export const catalogSeed: CatalogProduct[] = [
+const catalogSeedBase: Omit<CatalogProduct, 'sizeGuide'>[] = [
   {
     id: seedProductIds.onesie,
     name: 'Cotton snap onesie',
@@ -225,6 +258,11 @@ export const catalogSeed: CatalogProduct[] = [
       'Soft cotton, labeled with the age it is cut for. Machine wash cold and dry low.',
   },
 ];
+
+export const catalogSeed: CatalogProduct[] = catalogSeedBase.map((product) => ({
+  ...product,
+  sizeGuide: defaultSizeGuide(product.sizes),
+}));
 
 export type PublicUser = {
   id: string;

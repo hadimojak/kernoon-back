@@ -1,7 +1,13 @@
 import { Injectable, NotFoundException, OnModuleInit } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
-import { catalogSeed, CatalogProduct, Category, SizeId } from '@app/contracts';
+import {
+  catalogSeed,
+  CatalogProduct,
+  Category,
+  defaultSizeGuide,
+  SizeId,
+} from '@app/contracts';
 import { Product } from './models/product';
 
 @Injectable()
@@ -15,7 +21,19 @@ export class CatalogService implements OnModuleInit {
     if ((await this.products.count()) > 0) return;
     await this.products.save(
       catalogSeed.map((product, position) =>
-        this.products.create({ ...product, sizes: [...product.sizes], position }),
+        this.products.create({
+          id: product.id,
+          name: product.name,
+          nameFa: product.nameFa,
+          usd: product.usd,
+          toman: product.toman,
+          image: product.image,
+          category: product.category,
+          sizes: [...product.sizes],
+          stock: product.stock,
+          description: product.description,
+          position,
+        }),
       ),
     );
   }
@@ -37,6 +55,7 @@ export class CatalogService implements OnModuleInit {
 }
 
 function present(product: Product): CatalogProduct {
+  const sizes = product.sizes as SizeId[];
   return {
     id: product.id,
     name: product.name,
@@ -44,8 +63,10 @@ function present(product: Product): CatalogProduct {
     usd: product.usd,
     toman: product.toman,
     image: product.image,
+    images: [product.image],
     category: product.category as Category,
-    sizes: product.sizes as SizeId[],
+    sizes,
+    sizeGuide: defaultSizeGuide(sizes),
     stock: product.stock,
     description: product.description,
   };

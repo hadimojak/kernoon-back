@@ -11,9 +11,11 @@ import {
   catalogSeed,
   CatalogProduct,
   Category,
+  defaultSizeGuide,
   Role,
   SEED_MASTER_SELLER_ID,
   SEED_SELLER_ID,
+  SizeGuideRow,
   SizeId,
 } from '@app/contracts';
 import { SellerProductDto } from './dto';
@@ -33,6 +35,9 @@ export class ProductsService implements OnModuleInit {
         this.products.create({
           ...product,
           sizes: [...product.sizes],
+          sizeGuide: product.sizeGuide?.length
+            ? product.sizeGuide
+            : defaultSizeGuide(product.sizes),
           images: [...(product.images?.length ? product.images : [product.image])],
           position,
           masterSellerId: SEED_MASTER_SELLER_ID,
@@ -97,6 +102,7 @@ export class ProductsService implements OnModuleInit {
     const position = (await this.products.count()) + 1;
     const toman = dto.toman;
     const usd = dto.usd ?? Math.max(1, Math.round(toman / 42000));
+    const sizeGuide = normalizeSizeGuide(dto.sizes, dto.sizeGuide);
     const saved = await this.products.save(
       this.products.create({
         id: randomUUID(),
@@ -108,6 +114,7 @@ export class ProductsService implements OnModuleInit {
         images,
         category: dto.category,
         sizes: [...dto.sizes],
+        sizeGuide,
         stock: dto.stock,
         description: dto.description.trim(),
         position,
@@ -132,6 +139,7 @@ export class ProductsService implements OnModuleInit {
     product.usd = dto.usd ?? Math.max(1, Math.round(dto.toman / 42000));
     product.category = dto.category;
     product.sizes = [...dto.sizes];
+    product.sizeGuide = normalizeSizeGuide(dto.sizes, dto.sizeGuide);
     product.stock = dto.stock;
     product.description = dto.description.trim();
     product.images = images;
@@ -179,11 +187,48 @@ function normalizeImages(images?: string[], cover?: string) {
   return album;
 }
 
+function normalizeSizeGuide(
+  sizes: SizeId[],
+  guide?: SizeGuideRow[],
+): SizeGuideRow[] {
+  if (!guide?.length) return defaultSizeGuide(sizes);
+  const bySize = new Map(
+    guide
+      .filter((row) => sizes.includes(row.size))
+      .map((row) => [
+        row.size,
+        {
+          size: row.size,
+          heightCm: row.heightCm.trim(),
+          chestCm: row.chestCm.trim(),
+          waistCm: row.waistCm.trim(),
+          ...(row.note?.trim() ? { note: row.note.trim() } : {}),
+        } satisfies SizeGuideRow,
+      ]),
+  );
+  return sizes.map((size) => {
+    const existing = bySize.get(size);
+    if (
+      existing?.heightCm &&
+      existing.chestCm &&
+      existing.waistCm
+    ) {
+      return existing;
+    }
+    return defaultSizeGuide([size])[0];
+  });
+}
+
 function present(product: Product): CatalogProduct {
   const images =
     product.images?.filter(Boolean).length > 0
       ? product.images.filter(Boolean)
       : [product.image];
+  const sizes = product.sizes as SizeId[];
+  const sizeGuide =
+    product.sizeGuide?.length
+      ? normalizeSizeGuide(sizes, product.sizeGuide)
+      : defaultSizeGuide(sizes);
   return {
     id: product.id,
     name: product.name,
@@ -193,7 +238,8 @@ function present(product: Product): CatalogProduct {
     image: product.image || images[0],
     images,
     category: product.category as Category,
-    sizes: product.sizes as SizeId[],
+    sizes,
+    sizeGuide,
     stock: product.stock,
     description: product.description,
     masterSellerId: product.masterSellerId,

@@ -1,3 +1,4 @@
+import { Type } from 'class-transformer';
 import {
   ArrayMinSize,
   IsArray,
@@ -8,6 +9,7 @@ import {
   IsUUID,
   Min,
   MinLength,
+  ValidateNested,
 } from 'class-validator';
 import { categories, Category, sizeIds, SizeId } from '@app/contracts';
 
@@ -27,6 +29,27 @@ export class ListProductsQuery {
   @IsOptional()
   @IsUUID()
   sellerId?: string;
+}
+
+export class SizeGuideRowDto {
+  @IsIn(sizeIds)
+  size!: SizeId;
+
+  @IsString()
+  @MinLength(1)
+  heightCm!: string;
+
+  @IsString()
+  @MinLength(1)
+  chestCm!: string;
+
+  @IsString()
+  @MinLength(1)
+  waistCm!: string;
+
+  @IsOptional()
+  @IsString()
+  note?: string;
 }
 
 export class SellerProductDto {
@@ -54,6 +77,12 @@ export class SellerProductDto {
   @ArrayMinSize(1)
   @IsIn(sizeIds, { each: true })
   sizes!: SizeId[];
+
+  @IsOptional()
+  @IsArray()
+  @ValidateNested({ each: true })
+  @Type(() => SizeGuideRowDto)
+  sizeGuide?: SizeGuideRowDto[];
 
   @IsInt()
   @Min(0)

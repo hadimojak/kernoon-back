@@ -1,4 +1,5 @@
 import { Column, Entity, PrimaryColumn } from 'typeorm';
+import type { SizeGuideRow } from '@app/contracts';
 
 @Entity('products')
 export class Product {
@@ -28,6 +29,10 @@ export class Product {
 
   @Column('simple-array')
   sizes!: string[];
+
+  /** JSON array of per-size measurements for this garment. */
+  @Column({ type: 'simple-json', nullable: true })
+  sizeGuide!: SizeGuideRow[] | null;
 
   @Column({ type: 'int' })
   stock!: number;
