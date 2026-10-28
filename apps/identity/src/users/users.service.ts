@@ -27,7 +27,7 @@ import { RedisService } from '../infrastructure/redis.service';
 
 const PASSWORD_RULE =
   'Password must be at least 6 characters and include an uppercase letter and a number';
-const ACCESS_TTL_SECONDS = 15 * 60;
+const ACCESS_TTL_SECONDS = 30 * 60;
 const REFRESH_TTL_SECONDS = 7 * 24 * 60 * 60;
 
 @Injectable()

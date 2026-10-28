@@ -19,7 +19,7 @@ import { UsersService } from './users.service';
       inject: [ConfigService],
       useFactory: (config: ConfigService) => ({
         secret: config.get<string>('JWT_SECRET', 'dev-only-change-me'),
-        signOptions: { expiresIn: 15 * 60 },
+        signOptions: { expiresIn: 30 * 60 },
       }),
     }),
   ],
