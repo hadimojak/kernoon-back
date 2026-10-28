@@ -9,7 +9,7 @@ export class CatalogController {
 
   @Get('products')
   list(@Req() req: GatewayRequest, @Res({ passthrough: true }) res: Response) {
-    return reply(res, this.gateway.forward('catalog', req, '/products'));
+    return reply(res, this.gateway.forward('products', req, '/products'));
   }
 
   @Get('products/:id')
@@ -18,6 +18,6 @@ export class CatalogController {
     @Param('id') id: string,
     @Res({ passthrough: true }) res: Response,
   ) {
-    return reply(res, this.gateway.forward('catalog', req, `/products/${id}`));
+    return reply(res, this.gateway.forward('products', req, `/products/${id}`));
   }
 }

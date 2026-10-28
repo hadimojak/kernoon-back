@@ -95,3 +95,14 @@ export class ChangePasswordDto {
   @MinLength(6)
   newPassword!: string;
 }
+
+const AVATAR_MIME = ['image/jpeg', 'image/png', 'image/webp'] as const;
+
+export class UploadProfileImageDto {
+  @IsString()
+  @MinLength(1)
+  imageBase64!: string;
+
+  @IsIn([...AVATAR_MIME])
+  mimeType!: (typeof AVATAR_MIME)[number];
+}

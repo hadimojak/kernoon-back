@@ -34,6 +34,10 @@ export abstract class UserAccount {
   @Column({ default: false })
   phoneVerified!: boolean;
 
+  /** Profile photo as a data-URL base64 string (`data:image/...;base64,...`), or null. */
+  @Column({ type: 'text', nullable: true })
+  avatarUrl!: string | null;
+
   @CreateDateColumn()
   createdAt!: Date;
 }

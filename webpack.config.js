@@ -12,8 +12,8 @@ module.exports = function (options) {
       ...options.resolve,
       alias: {
         ...(options.resolve && options.resolve.alias),
-        '@app/common': path.resolve(__dirname, 'libs/common/src'),
-        '@app/contracts': path.resolve(__dirname, 'libs/contracts/src'),
+        '@app/common': path.resolve(__dirname, 'libs/common/src/index.ts'),
+        '@app/contracts': path.resolve(__dirname, 'libs/contracts/src/index.ts'),
       },
     },
   };

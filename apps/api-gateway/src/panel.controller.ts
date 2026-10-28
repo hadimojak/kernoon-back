@@ -3,6 +3,7 @@ import {
   Delete,
   Get,
   Param,
+  Patch,
   Post,
   Req,
   Res,
@@ -31,7 +32,10 @@ export class PanelController {
     @Req() req: GatewayRequest,
     @Res({ passthrough: true }) res: Response,
   ) {
-    return reply(res, this.gateway.forward('panel', req, '/products'));
+    return reply(
+      res,
+      this.gateway.forward('products', req, '/seller/products'),
+    );
   }
 
   @Post('products')
@@ -39,7 +43,22 @@ export class PanelController {
     @Req() req: GatewayRequest,
     @Res({ passthrough: true }) res: Response,
   ) {
-    return reply(res, this.gateway.forward('panel', req, '/products'));
+    return reply(
+      res,
+      this.gateway.forward('products', req, '/seller/products'),
+    );
+  }
+
+  @Patch('products/:id')
+  updateProduct(
+    @Req() req: GatewayRequest,
+    @Param('id') id: string,
+    @Res({ passthrough: true }) res: Response,
+  ) {
+    return reply(
+      res,
+      this.gateway.forward('products', req, `/seller/products/${id}`),
+    );
   }
 
   @Delete('products/:id')
@@ -48,7 +67,10 @@ export class PanelController {
     @Param('id') id: string,
     @Res({ passthrough: true }) res: Response,
   ) {
-    return reply(res, this.gateway.forward('panel', req, `/products/${id}`));
+    return reply(
+      res,
+      this.gateway.forward('products', req, `/seller/products/${id}`),
+    );
   }
 
   @Get('orders')

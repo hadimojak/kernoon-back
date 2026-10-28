@@ -7,6 +7,7 @@ export const serviceNames = [
   'sellers',
   'payments',
   'panel',
+  'products',
 ] as const;
 
 export type ServiceName = (typeof serviceNames)[number];
@@ -20,6 +21,7 @@ const defaults: Record<ServiceName, string> = {
   sellers: 'http://127.0.0.1:3006',
   payments: 'http://127.0.0.1:3007',
   panel: 'http://127.0.0.1:3008',
+  products: 'http://127.0.0.1:3009',
 };
 
 export function serviceUrls(): Record<ServiceName, string> {
@@ -32,5 +34,6 @@ export function serviceUrls(): Record<ServiceName, string> {
     sellers: process.env.SELLERS_URL ?? defaults.sellers,
     payments: process.env.PAYMENTS_URL ?? defaults.payments,
     panel: process.env.PANEL_URL ?? defaults.panel,
+    products: process.env.PRODUCTS_URL ?? defaults.products,
   };
 }

@@ -7,6 +7,7 @@ export { serviceNames, serviceUrls, ServiceName } from './service-urls';
 export {
   requireUserId,
   CART_ID_HEADER,
+  MASTER_SELLER_ID_HEADER,
   USER_ID_HEADER,
   USER_ROLE_HEADER,
 } from './user-context';

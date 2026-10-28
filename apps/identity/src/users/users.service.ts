@@ -11,12 +11,18 @@ import { JwtService } from '@nestjs/jwt';
 import { InjectRepository } from '@nestjs/typeorm';
 import { randomBytes, scryptSync, timingSafeEqual } from 'crypto';
 import { Repository } from 'typeorm';
-import { PublicUser, Role } from '@app/contracts';
+import {
+  PublicUser,
+  Role,
+  SEED_MASTER_SELLER_ID,
+  SEED_SELLER_ID,
+} from '@app/contracts';
 import {
   ChangePasswordDto,
   LoginDto,
   SignupDto,
   UpdateProfileDto,
+  UploadProfileImageDto,
 } from './account.dto';
 import { normalizePhone } from '../auth/phone';
 import { Customer } from './models/customer';
@@ -61,6 +67,8 @@ export class UsersService implements OnModuleInit {
       '123456',
       'masterSeller',
       'Kernoon',
+      undefined,
+      SEED_MASTER_SELLER_ID,
     );
     await this.seed(
       'seller',
@@ -71,6 +79,7 @@ export class UsersService implements OnModuleInit {
       'seller',
       undefined,
       owner.id,
+      SEED_SELLER_ID,
     );
   }
 
@@ -212,6 +221,36 @@ export class UsersService implements OnModuleInit {
     return { updated: true };
   }
 
+  async uploadProfileImage(userId: string, dto: UploadProfileImageDto) {
+    const user = await this.requireUser(userId);
+    const raw = dto.imageBase64.includes(',')
+      ? dto.imageBase64.slice(dto.imageBase64.indexOf(',') + 1)
+      : dto.imageBase64;
+    let buffer: Buffer;
+    try {
+      buffer = Buffer.from(raw, 'base64');
+    } catch {
+      throw new BadRequestException('Invalid image data');
+    }
+    if (!buffer.length) {
+      throw new BadRequestException('Image is empty');
+    }
+    if (buffer.length > 1_500_000) {
+      throw new BadRequestException('Image must be 1.5MB or smaller');
+    }
+    if (!looksLikeImage(buffer, dto.mimeType)) {
+      throw new BadRequestException('File is not a valid image');
+    }
+    user.avatarUrl = `data:${dto.mimeType};base64,${buffer.toString('base64')}`;
+    return this.publicUser(await this.saveUser(user));
+  }
+
+  async removeProfileImage(userId: string) {
+    const user = await this.requireUser(userId);
+    user.avatarUrl = null;
+    return this.publicUser(await this.saveUser(user));
+  }
+
   private async seed(
     username: string,
     firstName: string,
@@ -221,6 +260,7 @@ export class UsersService implements OnModuleInit {
     role: Role,
     businessName?: string,
     masterSellerId?: string,
+    id?: string,
   ) {
     const existing = await this.findByEmail(email);
     if (existing) {
@@ -231,6 +271,7 @@ export class UsersService implements OnModuleInit {
       return existing;
     }
     return this.createUser({
+      id,
       username,
       firstName,
       lastName,
@@ -243,6 +284,7 @@ export class UsersService implements OnModuleInit {
   }
 
   private async createUser(input: {
+    id?: string;
     firstName: string;
     lastName: string;
     username: string | null;
@@ -254,6 +296,7 @@ export class UsersService implements OnModuleInit {
     masterSellerId?: string;
   }) {
     const shared = {
+      ...(input.id ? { id: input.id } : {}),
       firstName: input.firstName,
       lastName: input.lastName,
       username: input.username,
@@ -398,11 +441,18 @@ export class UsersService implements OnModuleInit {
   }
 
   private async tokenResponse(user: IdentityUser) {
+    const masterSellerId =
+      user.role === 'masterSeller'
+        ? user.id
+        : user.role === 'seller'
+          ? (user as Seller).masterSellerId
+          : undefined;
     const accessToken = this.jwt.sign(
       {
         sub: user.id,
         email: user.email ?? '',
         role: user.role,
+        ...(masterSellerId ? { masterSellerId } : {}),
         typ: 'access',
       },
       { expiresIn: ACCESS_TTL_SECONDS },
@@ -433,6 +483,12 @@ export class UsersService implements OnModuleInit {
   }
 
   private publicUser(user: IdentityUser): PublicUser {
+    const masterSellerId =
+      user.role === 'masterSeller'
+        ? user.id
+        : user.role === 'seller'
+          ? (user as Seller).masterSellerId
+          : undefined;
     return {
       id: user.id,
       firstName: user.firstName,
@@ -442,6 +498,8 @@ export class UsersService implements OnModuleInit {
       phone: user.phone ?? '',
       gender: user.gender,
       role: user.role,
+      ...(masterSellerId ? { masterSellerId } : {}),
+      avatarUrl: user.avatarUrl ?? null,
       createdAt: (user.createdAt instanceof Date
         ? user.createdAt
         : new Date()
@@ -458,6 +516,27 @@ export class UsersService implements OnModuleInit {
       throw new BadRequestException(PASSWORD_RULE);
     }
   }
+}
+
+function looksLikeImage(buffer: Buffer, mimeType: string) {
+  if (mimeType === 'image/jpeg') {
+    return buffer[0] === 0xff && buffer[1] === 0xd8;
+  }
+  if (mimeType === 'image/png') {
+    return (
+      buffer[0] === 0x89 &&
+      buffer[1] === 0x50 &&
+      buffer[2] === 0x4e &&
+      buffer[3] === 0x47
+    );
+  }
+  if (mimeType === 'image/webp') {
+    return (
+      buffer.toString('ascii', 0, 4) === 'RIFF' &&
+      buffer.toString('ascii', 8, 12) === 'WEBP'
+    );
+  }
+  return false;
 }
 
 function hashPassword(password: string) {

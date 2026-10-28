@@ -1,5 +1,6 @@
 import {
   Controller,
+  Delete,
   Get,
   Patch,
   Post,
@@ -163,6 +164,30 @@ export class IdentityController {
     return reply(
       res,
       this.gateway.forward('identity', req, '/profile/password'),
+    );
+  }
+
+  @Post('profile/image')
+  @UseGuards(JwtAuthGuard)
+  uploadProfileImage(
+    @Req() req: GatewayRequest,
+    @Res({ passthrough: true }) res: Response,
+  ) {
+    return reply(
+      res,
+      this.gateway.forward('identity', req, '/profile/image'),
+    );
+  }
+
+  @Delete('profile/image')
+  @UseGuards(JwtAuthGuard)
+  removeProfileImage(
+    @Req() req: GatewayRequest,
+    @Res({ passthrough: true }) res: Response,
+  ) {
+    return reply(
+      res,
+      this.gateway.forward('identity', req, '/profile/image'),
     );
   }
 }

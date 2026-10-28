@@ -3,6 +3,7 @@ import { Request } from 'express';
 
 export const USER_ID_HEADER = 'x-user-id';
 export const USER_ROLE_HEADER = 'x-user-role';
+export const MASTER_SELLER_ID_HEADER = 'x-master-seller-id';
 export const CART_ID_HEADER = 'x-cart-id';
 
 export function requireUserId(req: Request): string {

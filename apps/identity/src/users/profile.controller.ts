@@ -1,7 +1,11 @@
-import { Body, Controller, Get, Patch, Req } from '@nestjs/common';
+import { Body, Controller, Delete, Get, Patch, Post, Req } from '@nestjs/common';
 import { Request } from 'express';
 import { requireUserId } from '@app/common';
-import { ChangePasswordDto, UpdateProfileDto } from './account.dto';
+import {
+  ChangePasswordDto,
+  UpdateProfileDto,
+  UploadProfileImageDto,
+} from './account.dto';
 import { UsersService } from './users.service';
 
 @Controller('profile')
@@ -21,5 +25,15 @@ export class ProfileController {
   @Patch('password')
   password(@Req() req: Request, @Body() dto: ChangePasswordDto) {
     return this.users.changePassword(requireUserId(req), dto);
+  }
+
+  @Post('image')
+  uploadImage(@Req() req: Request, @Body() dto: UploadProfileImageDto) {
+    return this.users.uploadProfileImage(requireUserId(req), dto);
+  }
+
+  @Delete('image')
+  removeImage(@Req() req: Request) {
+    return this.users.removeProfileImage(requireUserId(req));
   }
 }

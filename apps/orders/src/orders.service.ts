@@ -68,8 +68,8 @@ export class OrdersService {
     const items: ShopOrderItem[] = [];
     for (const line of dto.items) {
       const product = await this.readOwned<CatalogProduct>(
-        urls.catalog,
-        'catalog',
+        urls.products,
+        'products',
         `/products/${line.productId}`,
         {},
       );

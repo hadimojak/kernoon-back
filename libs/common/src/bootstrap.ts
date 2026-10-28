@@ -5,6 +5,8 @@ import {
   VersioningType,
 } from '@nestjs/common';
 import { NestFactory } from '@nestjs/core';
+import { NestExpressApplication } from '@nestjs/platform-express';
+import { json, urlencoded } from 'express';
 
 export const API_VERSION = '1';
 
@@ -17,9 +19,13 @@ export async function bootstrap(
     prefix?: string;
   },
 ) {
-  const app = await NestFactory.create(module, {
+  const app = await NestFactory.create<NestExpressApplication>(module, {
     logger: ['error', 'warn'],
+    bodyParser: false,
   });
+  // Profile photos are posted as base64 JSON; default 100kb limit is too small.
+  app.use(json({ limit: '3mb' }));
+  app.use(urlencoded({ extended: true, limit: '3mb' }));
   app.enableShutdownHooks();
   app.enableVersioning({
     type: VersioningType.URI,

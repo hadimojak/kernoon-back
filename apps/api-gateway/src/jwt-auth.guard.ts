@@ -8,7 +8,13 @@ import { JwtService } from '@nestjs/jwt';
 import { Role } from '@app/contracts';
 import { GatewayRequest } from './gateway.service';
 
-type AccessToken = { sub: string; email: string; role: Role; typ?: string };
+type AccessToken = {
+  sub: string;
+  email: string;
+  role: Role;
+  typ?: string;
+  masterSellerId?: string;
+};
 
 @Injectable()
 export class JwtAuthGuard implements CanActivate {
@@ -25,7 +31,14 @@ export class JwtAuthGuard implements CanActivate {
         header.slice('Bearer '.length),
       );
       if (payload.typ !== 'access') throw new UnauthorizedException();
-      req.user = { id: payload.sub, email: payload.email, role: payload.role };
+      req.user = {
+        id: payload.sub,
+        email: payload.email,
+        role: payload.role,
+        masterSellerId:
+          payload.masterSellerId ||
+          (payload.role === 'masterSeller' ? payload.sub : undefined),
+      };
       return true;
     } catch {
       throw new UnauthorizedException();

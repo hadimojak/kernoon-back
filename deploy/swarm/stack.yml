@@ -15,6 +15,7 @@ x-data: &data
   SELLERS_URL: ${SELLERS_URL}
   PAYMENTS_URL: ${PAYMENTS_URL}
   PANEL_URL: ${PANEL_URL}
+  PRODUCTS_URL: ${PRODUCTS_URL}
   KAVENEGAR_API_KEY: ${KAVENEGAR_API_KEY}
   KAVENEGAR_SENDER: ${KAVENEGAR_SENDER}
   OAUTH_CLIENT_ID: ${OAUTH_CLIENT_ID}
@@ -185,6 +186,17 @@ services:
       <<: *data
       PORT: "3008"
       PANEL_DATABASE_URL: postgresql://${POSTGRES_USER}:${POSTGRES_PASSWORD}@postgres:5432/panel
+    networks:
+      - kernoon
+    deploy:
+      replicas: 1
+
+  products:
+    image: kernoon/products:${IMAGE_TAG}
+    environment:
+      <<: *data
+      PORT: "3009"
+      PRODUCTS_DATABASE_URL: postgresql://${POSTGRES_USER}:${POSTGRES_PASSWORD}@postgres:5432/products
     networks:
       - kernoon
     deploy:
