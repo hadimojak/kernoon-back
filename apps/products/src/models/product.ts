@@ -34,6 +34,12 @@ export class Product {
   @Column({ type: 'simple-json', nullable: true })
   sizeGuide!: SizeGuideRow[] | null;
 
+  @Column('simple-array', { default: '' })
+  colors!: string[];
+
+  @Column({ type: 'varchar', default: '' })
+  countryOfOrigin!: string;
+
   @Column({ type: 'int' })
   stock!: number;
 

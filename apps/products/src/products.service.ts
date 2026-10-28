@@ -2,19 +2,17 @@ import {
   ForbiddenException,
   Injectable,
   NotFoundException,
-  OnModuleInit,
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { randomUUID } from 'crypto';
 import { Repository } from 'typeorm';
 import {
-  catalogSeed,
   CatalogProduct,
   Category,
+  ClothingColorId,
+  clothingColorIds,
   defaultSizeGuide,
   Role,
-  SEED_MASTER_SELLER_ID,
-  SEED_SELLER_ID,
   SizeGuideRow,
   SizeId,
 } from '@app/contracts';
@@ -22,30 +20,11 @@ import { SellerProductDto } from './dto';
 import { Product } from './models/product';
 
 @Injectable()
-export class ProductsService implements OnModuleInit {
+export class ProductsService {
   constructor(
     @InjectRepository(Product)
     private readonly products: Repository<Product>,
   ) {}
-
-  async onModuleInit() {
-    if ((await this.products.count()) > 0) return;
-    await this.products.save(
-      catalogSeed.map((product, position) =>
-        this.products.create({
-          ...product,
-          sizes: [...product.sizes],
-          sizeGuide: product.sizeGuide?.length
-            ? product.sizeGuide
-            : defaultSizeGuide(product.sizes),
-          images: [...(product.images?.length ? product.images : [product.image])],
-          position,
-          masterSellerId: SEED_MASTER_SELLER_ID,
-          sellerId: SEED_SELLER_ID,
-        }),
-      ),
-    );
-  }
 
   async list(filters: {
     category?: Category;
@@ -115,6 +94,8 @@ export class ProductsService implements OnModuleInit {
         category: dto.category,
         sizes: [...dto.sizes],
         sizeGuide,
+        colors: normalizeColors(dto.colors),
+        countryOfOrigin: dto.countryOfOrigin.trim(),
         stock: dto.stock,
         description: dto.description.trim(),
         position,
@@ -140,6 +121,8 @@ export class ProductsService implements OnModuleInit {
     product.category = dto.category;
     product.sizes = [...dto.sizes];
     product.sizeGuide = normalizeSizeGuide(dto.sizes, dto.sizeGuide);
+    product.colors = normalizeColors(dto.colors);
+    product.countryOfOrigin = dto.countryOfOrigin.trim();
     product.stock = dto.stock;
     product.description = dto.description.trim();
     product.images = images;
@@ -219,6 +202,18 @@ function normalizeSizeGuide(
   });
 }
 
+function normalizeColors(colors?: string[]): ClothingColorId[] {
+  const allowed = new Set<string>(clothingColorIds);
+  const unique = [
+    ...new Set(
+      (colors ?? [])
+        .map((item) => item.trim())
+        .filter((item): item is ClothingColorId => allowed.has(item)),
+    ),
+  ];
+  return unique.length ? unique : ['white'];
+}
+
 function present(product: Product): CatalogProduct {
   const images =
     product.images?.filter(Boolean).length > 0
@@ -240,6 +235,8 @@ function present(product: Product): CatalogProduct {
     category: product.category as Category,
     sizes,
     sizeGuide,
+    colors: normalizeColors(product.colors),
+    countryOfOrigin: product.countryOfOrigin?.trim() || 'Iran',
     stock: product.stock,
     description: product.description,
     masterSellerId: product.masterSellerId,

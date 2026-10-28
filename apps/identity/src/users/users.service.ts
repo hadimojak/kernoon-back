@@ -11,12 +11,7 @@ import { JwtService } from '@nestjs/jwt';
 import { InjectRepository } from '@nestjs/typeorm';
 import { randomBytes, scryptSync, timingSafeEqual } from 'crypto';
 import { Repository } from 'typeorm';
-import {
-  PublicUser,
-  Role,
-  SEED_MASTER_SELLER_ID,
-  SEED_SELLER_ID,
-} from '@app/contracts';
+import { PublicUser, Role } from '@app/contracts';
 import {
   ChangePasswordDto,
   LoginDto,
@@ -67,8 +62,6 @@ export class UsersService implements OnModuleInit {
       '123456',
       'masterSeller',
       'Kernoon',
-      undefined,
-      SEED_MASTER_SELLER_ID,
     );
     await this.seed(
       'seller',
@@ -79,8 +72,19 @@ export class UsersService implements OnModuleInit {
       'seller',
       undefined,
       owner.id,
-      SEED_SELLER_ID,
     );
+  }
+
+  async shopOwnerIds() {
+    const owner = await this.findByEmail('owner@kernoon.test');
+    const seller = await this.findByEmail('seller@kernoon.test');
+    if (!owner || owner.role !== 'masterSeller') {
+      return null;
+    }
+    return {
+      masterSellerId: owner.id,
+      sellerId: seller?.id ?? owner.id,
+    };
   }
 
   async signup(dto: SignupDto) {
@@ -260,7 +264,6 @@ export class UsersService implements OnModuleInit {
     role: Role,
     businessName?: string,
     masterSellerId?: string,
-    id?: string,
   ) {
     const existing = await this.findByEmail(email);
     if (existing) {
@@ -271,7 +274,6 @@ export class UsersService implements OnModuleInit {
       return existing;
     }
     return this.createUser({
-      id,
       username,
       firstName,
       lastName,
@@ -284,7 +286,6 @@ export class UsersService implements OnModuleInit {
   }
 
   private async createUser(input: {
-    id?: string;
     firstName: string;
     lastName: string;
     username: string | null;
@@ -296,7 +297,6 @@ export class UsersService implements OnModuleInit {
     masterSellerId?: string;
   }) {
     const shared = {
-      ...(input.id ? { id: input.id } : {}),
       firstName: input.firstName,
       lastName: input.lastName,
       username: input.username,

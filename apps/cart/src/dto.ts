@@ -1,5 +1,20 @@
-import { IsIn, IsInt, IsString, Max, Min, MinLength } from 'class-validator';
-import { sizeIds, SizeId, tiers, Tier } from '@app/contracts';
+import {
+  IsIn,
+  IsInt,
+  IsOptional,
+  IsString,
+  Max,
+  Min,
+  MinLength,
+} from 'class-validator';
+import {
+  clothingColorIds,
+  ClothingColorId,
+  sizeIds,
+  SizeId,
+  tiers,
+  Tier,
+} from '@app/contracts';
 
 export class AddCartItemDto {
   @IsString()
@@ -11,6 +26,10 @@ export class AddCartItemDto {
 
   @IsIn(tiers)
   tier!: Tier;
+
+  @IsOptional()
+  @IsIn(clothingColorIds)
+  color?: ClothingColorId;
 
   @IsInt()
   @Min(1)

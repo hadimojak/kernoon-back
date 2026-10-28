@@ -1,42 +1,21 @@
-import { Injectable, NotFoundException, OnModuleInit } from '@nestjs/common';
+import { Injectable, NotFoundException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import {
-  catalogSeed,
   CatalogProduct,
   Category,
+  ClothingColorId,
   defaultSizeGuide,
   SizeId,
 } from '@app/contracts';
 import { Product } from './models/product';
 
 @Injectable()
-export class CatalogService implements OnModuleInit {
+export class CatalogService {
   constructor(
     @InjectRepository(Product)
     private readonly products: Repository<Product>,
   ) {}
-
-  async onModuleInit() {
-    if ((await this.products.count()) > 0) return;
-    await this.products.save(
-      catalogSeed.map((product, position) =>
-        this.products.create({
-          id: product.id,
-          name: product.name,
-          nameFa: product.nameFa,
-          usd: product.usd,
-          toman: product.toman,
-          image: product.image,
-          category: product.category,
-          sizes: [...product.sizes],
-          stock: product.stock,
-          description: product.description,
-          position,
-        }),
-      ),
-    );
-  }
 
   async list(category?: Category, size?: SizeId) {
     const rows = await this.products.find({ order: { position: 'ASC' } });
@@ -67,6 +46,8 @@ function present(product: Product): CatalogProduct {
     category: product.category as Category,
     sizes,
     sizeGuide: defaultSizeGuide(sizes),
+    colors: ['multi'] as ClothingColorId[],
+    countryOfOrigin: 'Iran',
     stock: product.stock,
     description: product.description,
   };

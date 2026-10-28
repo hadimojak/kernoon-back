@@ -6,6 +6,7 @@ import { RedisModule } from '../infrastructure/redis.module';
 import { Customer } from './models/customer';
 import { MasterSeller } from './models/master-seller';
 import { Seller } from './models/seller';
+import { BootstrapController } from './bootstrap.controller';
 import { ProfileController } from './profile.controller';
 import { UsersController } from './users.controller';
 import { UsersService } from './users.service';
@@ -23,7 +24,7 @@ import { UsersService } from './users.service';
       }),
     }),
   ],
-  controllers: [UsersController, ProfileController],
+  controllers: [UsersController, ProfileController, BootstrapController],
   providers: [UsersService],
   exports: [UsersService],
 })

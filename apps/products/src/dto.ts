@@ -11,7 +11,14 @@ import {
   MinLength,
   ValidateNested,
 } from 'class-validator';
-import { categories, Category, sizeIds, SizeId } from '@app/contracts';
+import {
+  categories,
+  Category,
+  clothingColorIds,
+  ClothingColorId,
+  sizeIds,
+  SizeId,
+} from '@app/contracts';
 
 export class ListProductsQuery {
   @IsOptional()
@@ -83,6 +90,15 @@ export class SellerProductDto {
   @ValidateNested({ each: true })
   @Type(() => SizeGuideRowDto)
   sizeGuide?: SizeGuideRowDto[];
+
+  @IsArray()
+  @ArrayMinSize(1)
+  @IsIn(clothingColorIds, { each: true })
+  colors!: ClothingColorId[];
+
+  @IsString()
+  @MinLength(1)
+  countryOfOrigin!: string;
 
   @IsInt()
   @Min(0)

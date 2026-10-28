@@ -35,6 +35,9 @@ export class BasketItem {
   @Column()
   tier!: string;
 
+  @Column({ type: 'varchar', default: '' })
+  color!: string;
+
   @Column({ type: 'int' })
   quantity!: number;
 }

@@ -20,14 +20,22 @@ export class CartService {
 
   async add(
     ownerId: string,
-    input: { productId: string; size: SizeId; tier: Tier; quantity: number },
+    input: {
+      productId: string;
+      size: SizeId;
+      tier: Tier;
+      color?: string;
+      quantity: number;
+    },
   ) {
     const basket = await this.ensure(ownerId);
+    const color = input.color?.trim() ?? '';
     const existing = basket.items.find(
       (item) =>
         item.productId === input.productId &&
         item.size === input.size &&
-        item.tier === input.tier,
+        item.tier === input.tier &&
+        (item.color ?? '') === color,
     );
     if (existing) {
       existing.quantity = Math.min(20, existing.quantity + input.quantity);
@@ -40,6 +48,7 @@ export class CartService {
         productId: input.productId,
         size: input.size,
         tier: input.tier,
+        color,
         quantity: input.quantity,
       }),
     );
@@ -75,6 +84,7 @@ export class CartService {
         productId: item.productId,
         size: item.size as SizeId,
         tier: item.tier as Tier,
+        color: item.color || undefined,
         quantity: item.quantity,
       });
     }
@@ -118,6 +128,7 @@ function present(item: BasketItem) {
     productId: item.productId,
     size: item.size as SizeId,
     tier: item.tier as Tier,
+    color: item.color || undefined,
     quantity: item.quantity,
   };
 }

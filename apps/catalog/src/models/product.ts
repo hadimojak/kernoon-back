@@ -2,7 +2,7 @@ import { Column, Entity, PrimaryColumn } from 'typeorm';
 
 @Entity('products')
 export class Product {
-  @PrimaryColumn()
+  @PrimaryColumn('uuid')
   id!: string;
 
   @Column()
