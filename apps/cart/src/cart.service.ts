@@ -65,6 +65,28 @@ export class CartService {
     return { items: [] };
   }
 
+  async merge(fromOwnerId: string, toOwnerId: string) {
+    if (fromOwnerId === toOwnerId) return this.get(toOwnerId);
+    const from = await this.find(fromOwnerId);
+    if (!from?.items?.length) return this.get(toOwnerId);
+
+    for (const item of [...from.items]) {
+      await this.add(toOwnerId, {
+        productId: item.productId,
+        size: item.size as SizeId,
+        tier: item.tier as Tier,
+        quantity: item.quantity,
+      });
+    }
+
+    const leftover = await this.find(fromOwnerId);
+    if (leftover) {
+      if (leftover.items?.length) await this.items.remove(leftover.items);
+      await this.baskets.remove(leftover);
+    }
+    return this.get(toOwnerId);
+  }
+
   private async find(ownerId: string) {
     return this.baskets.findOne({
       where: { ownerId },

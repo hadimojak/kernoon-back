@@ -4,8 +4,6 @@ import { UsersModule } from '../users/users.module';
 import { EmailController } from './email.controller';
 import { EmailCodeService } from './email-code.service';
 import { EmailSender } from './email.sender';
-import { OauthController } from './oauth.controller';
-import { OauthService } from './oauth.service';
 import { PhoneController } from './phone.controller';
 import { PhoneCodeService } from './phone-code.service';
 import { SellerOtpController } from './seller-otp.controller';
@@ -13,7 +11,7 @@ import { SmsSender } from './sms.sender';
 
 @Module({
   imports: [RedisModule, UsersModule],
-  controllers: [PhoneController, EmailController, SellerOtpController, OauthController],
-  providers: [SmsSender, EmailSender, PhoneCodeService, EmailCodeService, OauthService],
+  controllers: [PhoneController, EmailController, SellerOtpController],
+  providers: [SmsSender, EmailSender, PhoneCodeService, EmailCodeService],
 })
 export class AuthModule {}

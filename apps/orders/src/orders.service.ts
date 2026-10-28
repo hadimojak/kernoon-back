@@ -2,7 +2,6 @@ import {
   BadRequestException,
   HttpException,
   Injectable,
-  NotFoundException,
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
@@ -48,12 +47,6 @@ export class OrdersService {
       order: { createdAt: 'DESC' },
     });
     return rows.map(present);
-  }
-
-  async get(userId: string, id: string) {
-    const order = await this.orders.findOne({ where: { userId, id } });
-    if (!order) throw new NotFoundException('Order not found');
-    return present(order);
   }
 
   async create(userId: string, dto: CreateOrderDto) {

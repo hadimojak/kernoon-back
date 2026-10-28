@@ -5,18 +5,10 @@ import {
   IsInt,
   IsOptional,
   IsString,
-  Matches,
   Min,
   MinLength,
 } from 'class-validator';
-import {
-  categories,
-  Category,
-  iranProvinces,
-  IranProvince,
-  sizeIds,
-  SizeId,
-} from '@app/contracts';
+import { categories, Category, sizeIds, SizeId } from '@app/contracts';
 
 export class ListingDto {
   @IsString()
@@ -46,20 +38,4 @@ export class ListingDto {
   @IsOptional()
   @IsString()
   image?: string;
-}
-
-export class ShopCustomerDto {
-  @IsString()
-  @MinLength(1)
-  name!: string;
-
-  @Matches(/^09\d{9}$/)
-  phone!: string;
-
-  @IsIn(iranProvinces)
-  province!: IranProvince;
-
-  @IsString()
-  @MinLength(1)
-  city!: string;
 }

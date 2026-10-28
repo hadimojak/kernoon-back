@@ -8,7 +8,7 @@ import {
   Req,
 } from '@nestjs/common';
 import { Request } from 'express';
-import { ListingDto, ShopCustomerDto } from './dto';
+import { ListingDto } from './dto';
 import { PanelService } from './panel.service';
 import { requireSeller } from './require-seller';
 
@@ -45,10 +45,5 @@ export class PanelController {
   @Get('customers')
   customers(@Req() req: Request) {
     return this.panel.listCustomers(requireSeller(req));
-  }
-
-  @Post('customers')
-  addCustomer(@Req() req: Request, @Body() dto: ShopCustomerDto) {
-    return this.panel.addCustomer(requireSeller(req), dto);
   }
 }

@@ -73,22 +73,6 @@ export class IdentityController {
     );
   }
 
-  @Post('oauth/authorize')
-  authorize(
-    @Req() req: GatewayRequest,
-    @Res({ passthrough: true }) res: Response,
-  ) {
-    return reply(
-      res,
-      this.gateway.forward('identity', req, '/oauth/authorize'),
-    );
-  }
-
-  @Post('oauth/token')
-  token(@Req() req: GatewayRequest, @Res({ passthrough: true }) res: Response) {
-    return reply(res, this.gateway.forward('identity', req, '/oauth/token'));
-  }
-
   @Post('auth/refresh')
   refresh(
     @Req() req: GatewayRequest,

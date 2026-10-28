@@ -26,15 +26,6 @@ export class AccountController {
     return reply(res, this.gateway.forward('account', req, '/addresses'));
   }
 
-  @Get('addresses/:id')
-  getAddress(
-    @Req() req: GatewayRequest,
-    @Param('id') id: string,
-    @Res({ passthrough: true }) res: Response,
-  ) {
-    return reply(res, this.gateway.forward('account', req, `/addresses/${id}`));
-  }
-
   @Post('addresses')
   addAddress(
     @Req() req: GatewayRequest,
@@ -58,18 +49,6 @@ export class AccountController {
     @Res({ passthrough: true }) res: Response,
   ) {
     return reply(res, this.gateway.forward('account', req, '/payment-methods'));
-  }
-
-  @Get('payment-methods/:id')
-  getPayment(
-    @Req() req: GatewayRequest,
-    @Param('id') id: string,
-    @Res({ passthrough: true }) res: Response,
-  ) {
-    return reply(
-      res,
-      this.gateway.forward('account', req, `/payment-methods/${id}`),
-    );
   }
 
   @Post('payment-methods')

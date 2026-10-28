@@ -3,7 +3,6 @@ import {
   Delete,
   Get,
   Param,
-  Patch,
   Post,
   Req,
   Res,
@@ -24,18 +23,14 @@ export class CartController {
     return reply(res, this.gateway.forward('cart', req, '/cart'));
   }
 
+  @Post('merge')
+  merge(@Req() req: GatewayRequest, @Res({ passthrough: true }) res: Response) {
+    return reply(res, this.gateway.forward('cart', req, '/cart/merge'));
+  }
+
   @Post('items')
   add(@Req() req: GatewayRequest, @Res({ passthrough: true }) res: Response) {
     return reply(res, this.gateway.forward('cart', req, '/cart/items'));
-  }
-
-  @Patch('items/:id')
-  update(
-    @Req() req: GatewayRequest,
-    @Param('id') id: string,
-    @Res({ passthrough: true }) res: Response,
-  ) {
-    return reply(res, this.gateway.forward('cart', req, `/cart/items/${id}`));
   }
 
   @Delete('items/:id')
@@ -45,10 +40,5 @@ export class CartController {
     @Res({ passthrough: true }) res: Response,
   ) {
     return reply(res, this.gateway.forward('cart', req, `/cart/items/${id}`));
-  }
-
-  @Delete()
-  clear(@Req() req: GatewayRequest, @Res({ passthrough: true }) res: Response) {
-    return reply(res, this.gateway.forward('cart', req, '/cart'));
   }
 }

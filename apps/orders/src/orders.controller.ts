@@ -1,4 +1,4 @@
-import { Body, Controller, Get, Param, Post, Req } from '@nestjs/common';
+import { Body, Controller, Get, Post, Req } from '@nestjs/common';
 import { Request } from 'express';
 import { requireUserId } from '@app/common';
 import { CreateOrderDto } from './dto';
@@ -11,11 +11,6 @@ export class OrdersController {
   @Get()
   list(@Req() req: Request) {
     return this.orders.list(requireUserId(req));
-  }
-
-  @Get(':id')
-  get(@Req() req: Request, @Param('id') id: string) {
-    return this.orders.get(requireUserId(req), id);
   }
 
   @Post()

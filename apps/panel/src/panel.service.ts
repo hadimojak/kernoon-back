@@ -2,7 +2,7 @@ import { Injectable, NotFoundException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { Category, SizeId } from '@app/contracts';
-import { ListingDto, ShopCustomerDto } from './dto';
+import { ListingDto } from './dto';
 import { Listing, ShopCustomer } from './models/shop';
 
 @Injectable()
@@ -63,19 +63,6 @@ export class PanelService {
       order: { createdAt: 'DESC' },
     });
     return rows.map(presentCustomer);
-  }
-
-  async addCustomer(sellerId: string, dto: ShopCustomerDto) {
-    const saved = await this.customers.save(
-      this.customers.create({
-        sellerId,
-        name: dto.name.trim(),
-        phone: dto.phone,
-        province: dto.province,
-        city: dto.city.trim(),
-      }),
-    );
-    return presentCustomer(saved);
   }
 }
 

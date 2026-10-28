@@ -63,12 +63,4 @@ export class PanelController {
   ) {
     return reply(res, this.gateway.forward('panel', req, '/customers'));
   }
-
-  @Post('customers')
-  addCustomer(
-    @Req() req: GatewayRequest,
-    @Res({ passthrough: true }) res: Response,
-  ) {
-    return reply(res, this.gateway.forward('panel', req, '/customers'));
-  }
 }

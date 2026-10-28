@@ -20,17 +20,4 @@ export class CatalogController {
   ) {
     return reply(res, this.gateway.forward('catalog', req, `/products/${id}`));
   }
-
-  @Get('categories')
-  categories(
-    @Req() req: GatewayRequest,
-    @Res({ passthrough: true }) res: Response,
-  ) {
-    return reply(res, this.gateway.forward('catalog', req, '/categories'));
-  }
-
-  @Get('sizes')
-  sizes(@Req() req: GatewayRequest, @Res({ passthrough: true }) res: Response) {
-    return reply(res, this.gateway.forward('catalog', req, '/sizes'));
-  }
 }
