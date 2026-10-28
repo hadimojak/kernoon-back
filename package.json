@@ -7,13 +7,13 @@
   "license": "UNLICENSED",
   "scripts": {
     "build": "npm run build:apps",
-    "build:apps": "nest build api-gateway && nest build identity && nest build catalog && nest build cart && nest build orders && nest build account && nest build sellers && nest build payments && nest build panel && nest build products",
+    "build:apps": "nest build api-gateway && nest build identity && nest build catalog && nest build cart && nest build orders && nest build account && nest build sellers && nest build payments && nest build panel && nest build products && nest build tickets",
     "format": "prettier --write \"apps/**/*.ts\" \"libs/**/*.ts\"",
     "start": "nest start api-gateway",
     "infra:up": "docker compose --env-file .env.development up -d --wait postgres redis rabbitmq",
     "infra:down": "docker compose --env-file .env.development stop postgres redis rabbitmq",
     "start:dev": "npm run start:dev:all",
-    "start:dev:all": "concurrently -n gateway,identity,catalog,cart,orders,account,sellers,payments,panel,products -c cyan,green,yellow,blue,magenta,white,gray,red,brightCyan,brightGreen \"npm:start:dev:gateway\" \"npm:start:dev:identity\" \"npm:start:dev:catalog\" \"npm:start:dev:cart\" \"npm:start:dev:orders\" \"npm:start:dev:account\" \"npm:start:dev:sellers\" \"npm:start:dev:payments\" \"npm:start:dev:panel\" \"npm:start:dev:products\"",
+    "start:dev:all": "concurrently -n gateway,identity,catalog,cart,orders,account,sellers,payments,panel,products,tickets -c cyan,green,yellow,blue,magenta,white,gray,red,brightCyan,brightGreen,brightMagenta \"npm:start:dev:gateway\" \"npm:start:dev:identity\" \"npm:start:dev:catalog\" \"npm:start:dev:cart\" \"npm:start:dev:orders\" \"npm:start:dev:account\" \"npm:start:dev:sellers\" \"npm:start:dev:payments\" \"npm:start:dev:panel\" \"npm:start:dev:products\" \"npm:start:dev:tickets\"",
     "start:dev:gateway": "nest start api-gateway --watch",
     "start:dev:identity": "nest start identity --watch",
     "start:dev:catalog": "nest start catalog --watch",
@@ -24,6 +24,7 @@
     "start:dev:payments": "nest start payments --watch",
     "start:dev:panel": "nest start panel --watch",
     "start:dev:products": "nest start products --watch",
+    "start:dev:tickets": "nest start tickets --watch",
     "start:prod": "node dist/apps/api-gateway/main",
     "start:prod:gateway": "node dist/apps/api-gateway/main",
     "start:prod:identity": "node dist/apps/identity/main",
@@ -35,6 +36,7 @@
     "start:prod:payments": "node dist/apps/payments/main",
     "start:prod:panel": "node dist/apps/panel/main",
     "start:prod:products": "node dist/apps/products/main",
+    "start:prod:tickets": "node dist/apps/tickets/main",
     "lint": "eslint \"{apps,libs}/**/*.ts\" --fix",
     "test": "jest",
     "test:watch": "jest --watch",
@@ -52,7 +54,8 @@
     "migration:payments": "typeorm-ts-node-commonjs migration:run -d apps/payments/src/data-source.ts",
     "migration:panel": "typeorm-ts-node-commonjs migration:run -d apps/panel/src/data-source.ts",
     "migration:products": "typeorm-ts-node-commonjs migration:run -d apps/products/src/data-source.ts",
-    "migration:apps": "npm run migration:account && npm run migration:catalog && npm run migration:cart && npm run migration:orders && npm run migration:sellers && npm run migration:payments && npm run migration:panel && npm run migration:products"
+    "migration:tickets": "typeorm-ts-node-commonjs migration:run -d apps/tickets/src/data-source.ts",
+    "migration:apps": "npm run migration:account && npm run migration:catalog && npm run migration:cart && npm run migration:orders && npm run migration:sellers && npm run migration:payments && npm run migration:panel && npm run migration:products && npm run migration:tickets"
   },
   "dependencies": {
     "@nestjs/common": "^11.0.1",
@@ -60,7 +63,9 @@
     "@nestjs/core": "^11.0.1",
     "@nestjs/jwt": "^11.0.0",
     "@nestjs/platform-express": "^11.0.1",
+    "@nestjs/platform-socket.io": "^11.2.8",
     "@nestjs/typeorm": "^11.0.3",
+    "@nestjs/websockets": "^11.2.8",
     "class-transformer": "^0.5.1",
     "class-validator": "^0.14.2",
     "ioredis": "^5.11.1",
@@ -68,6 +73,7 @@
     "pg": "^8.23.1",
     "reflect-metadata": "^0.2.2",
     "rxjs": "^7.8.1",
+    "socket.io": "^4.8.4",
     "typeorm": "^1.1.2"
   },
   "devDependencies": {

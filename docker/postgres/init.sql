@@ -16,3 +16,5 @@ SELECT 'CREATE DATABASE panel'
 WHERE NOT EXISTS (SELECT FROM pg_database WHERE datname = 'panel')\gexec
 SELECT 'CREATE DATABASE products'
 WHERE NOT EXISTS (SELECT FROM pg_database WHERE datname = 'products')\gexec
+SELECT 'CREATE DATABASE tickets'
+WHERE NOT EXISTS (SELECT FROM pg_database WHERE datname = 'tickets')\gexec

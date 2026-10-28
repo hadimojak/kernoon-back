@@ -100,6 +100,15 @@
         "tsConfigPath": "apps/products/tsconfig.app.json"
       }
     },
+    "tickets": {
+      "type": "application",
+      "root": "apps/tickets",
+      "entryFile": "main",
+      "sourceRoot": "apps/tickets/src",
+      "compilerOptions": {
+        "tsConfigPath": "apps/tickets/tsconfig.app.json"
+      }
+    },
     "common": {
       "type": "library",
       "root": "libs/common",

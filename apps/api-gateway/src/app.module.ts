@@ -9,6 +9,7 @@ import { IdentityModule } from './identity.module';
 import { OrdersModule } from './orders.module';
 import { PanelModule } from './panel.module';
 import { SellersModule } from './sellers.module';
+import { TicketsModule } from './tickets.module';
 
 @Module({
   imports: [
@@ -21,6 +22,7 @@ import { SellersModule } from './sellers.module';
     AccountModule,
     SellersModule,
     PanelModule,
+    TicketsModule,
   ],
   controllers: [HealthController],
 })
